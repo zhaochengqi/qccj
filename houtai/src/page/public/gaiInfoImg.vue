@@ -1,0 +1,218 @@
+<template>
+    <el-dialog title="请选择头像" class="dialog-infoimg" :visible.sync="dialogVisible" size="tiny" :before-close="handleClose">
+        <div class="morenTitle text-mint"> 默认头像 </div>
+        <el-row class="C-img-row">
+            <div class="morenF">
+                <img class="img-md" src="../../assets/img/profile-photos/1.png" @click="xuanzeImg(1)" alt="">
+                <img class="img-md" src="../../assets/img/profile-photos/2.png" @click="xuanzeImg(2)" alt="">
+                <img class="img-md" src="../../assets/img/profile-photos/3.png" @click="xuanzeImg(3)" alt="">
+                <img class="img-md" src="../../assets/img/profile-photos/4.png" @click="xuanzeImg(4)" alt="">
+                <img class="img-md" src="../../assets/img/profile-photos/5.png" @click="xuanzeImg(5)" alt="">
+            </div>
+        </el-row>
+        <el-row class="C-img-row">
+            <div class="morenF">
+                <img class="img-md" src="../../assets/img/profile-photos/6.png" @click="xuanzeImg(6)" alt="">
+                <img class="img-md" src="../../assets/img/profile-photos/7.png" @click="xuanzeImg(7)" alt="">
+                <img class="img-md" src="../../assets/img/profile-photos/8.png" @click="xuanzeImg(8)" alt="">
+                <img class="img-md" src="../../assets/img/profile-photos/9.png" @click="xuanzeImg(9)" alt="">
+                <img class="img-md" src="../../assets/img/profile-photos/10.png" @click="xuanzeImg(10)" alt="">
+            </div>
+        </el-row>
+        <el-row class="zidiF text-primary">
+            <el-col :span="10">
+                <div class="morenTitle"> 自定义头像 </div>
+                <QNUpload max_file_size="500kb" keyPrefix="image" button_text='上传头像' :filters='filters' @Callback-UploadProgress="CB_UploadProgress" @Callback-GetFileUrl="CB_GetFileUrl" @Callback-Error="CB_Error"></QNUpload>
+            </el-col>
+            <el-col :span="14">
+                <div v-if="img" class="Info-Img">
+                    <span>
+                    示例：
+                    </span>
+                    <div>
+                        <img :src="img" alt="" class="img-md img-circle" />
+                        <span class="el-icon-circle-cross" @click="rmImage">
+                    </span>
+                    </div>
+                </div>
+            </el-col>
+        </el-row>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="handleClose(1)"> 保存 </el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+import QNUpload from '@/components/qiniu-upload'
+export default {
+    props: ['dialogVisibles'],
+    data() {
+        return {
+            dialogVisible: false,
+            //上传格式
+            filters: {
+                mime_types: [{
+                    title: "Image Files",
+                    extensions: "jpg,png,bmp,jpeg"
+                }]
+            },
+            img: ''
+        }
+    },
+    watch: {
+        dialogVisibles(newValue, oldValue) {
+            if (newValue == oldValue) return;
+            this.dialogVisible = newValue;
+            this.img = this.userinfo.userinfo.head;
+        }
+    },
+    methods: {
+        //点击删除图片
+        rmImage() {
+            this.$confirm('确定要移除图片吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.img = ''
+            }).catch(() => {});
+        },
+        //离开此页面
+        handleClose(val) {
+            let x = 1;
+            //判断是不是按保存按钮离开此页面的
+            if (val != 1) {
+                //不是保存按钮
+                this.img = this.userinfo.userinfo.head;
+                x = 0;
+            }
+            this.$emit('Cb-ImgDialog', this.img, x)
+        },
+        //设置默认图片
+        xuanzeImg(val) {
+            this.img = this.InfoImgArr[val - 1];
+        },
+        /**
+         * [回调处理七牛上传相关数据]
+         * 其他更多回调方法参考 七牛组件
+         */
+        //文件上传过程，主要用于展现上传进度
+        CB_UploadProgress(file) {},
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl(file) {
+            this.$message({
+                message: '图片上传成功',
+                type: 'success'
+            });
+            this.img = file.split('!')[0] + '!230x162'
+        },
+        //获取上传错误信息
+        CB_Error(err, info) {
+            if (err.code == -600) {
+                this.$message({
+                    message: '图片最大上传大小不能超过500KB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '图片上传错误！',
+                    type: 'warning'
+                });
+            }
+        }
+    },
+    computed: {
+        //读取登录用户信息
+        userinfo: function() {
+            return this.$store.state.userinfo
+        },
+        InfoImgArr() {
+            return this.$store.state.InfoImgArr
+        }
+    },
+    components: {
+        QNUpload
+    }
+}
+</script>
+<style>
+.brTop {
+    margin-top: 20px;
+}
+
+.morenF>img:hover {
+    cursor: pointer;
+    box-shadow: 0px 0px 3px #1D8CE0;
+}
+
+.zidiF {
+    margin-top: 20px;
+}
+
+.morenTitle {
+    height: 30px;
+    line-height: 30px;
+    margin-bottom: 10px;
+}
+
+.morenF> img,
+.Info-Img img {
+    background: #E5E5E5;
+    padding: 4px;
+}
+
+.Info-Img {
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.Info-Img>span {
+    position: relative;
+    top: -17px;
+}
+
+.Info-Img>div {
+    margin-left: 2px;
+    top: 15px;
+    position: relative;
+    display: inline-block;
+}
+
+.Info-Img>div img:hover {
+    box-shadow: 0px 0px 3px #1D8CE0;
+}
+
+.Info-Img>div span {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+}
+
+.Info-Img>div span:hover {
+    color: #FF4949;
+    cursor: pointer;
+}
+
+.C-img-row {
+    display: flex;
+    justify-content: center;
+}
+
+.morenF {
+    margin: auto;
+}
+
+.morenF>img {
+    margin: 5px 5px;
+}
+
+.dialog-infoimg >div {
+    width: 32%;
+}
+</style>

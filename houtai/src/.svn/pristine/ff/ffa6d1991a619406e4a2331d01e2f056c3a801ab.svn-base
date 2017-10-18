@@ -1,0 +1,283 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="8">
+                    <el-input placeholder="检索：节点名称" v-model="filterText"> </el-input>
+                </el-col>
+                <el-col :md="16" :xs="20" :sm="20" class="text-right">
+                    <el-button-group>
+                        <el-button type='primary' icon="plus" v-if="authCheck(34)" @click="handleADD">添加一级菜单</el-button>
+                        <el-button type='warning' v-if="authCheck(75)" class="ti-exchange-vertical" @click="handleSort">节点排序</el-button>
+                    </el-button-group>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-tree :data="tableData" :expand-on-click-node="false" :default-expanded-keys="[1, 51,56]" :props="defaultProps" node-key="id" highlight-current :render-content="renderContent" ref="tree" :filter-node-method="filterNode">
+            </el-tree>
+        </div>
+        <jiedianAdd :dialogStatus="dialog" :dhid="dhid" :depth="depth" @CB-dialogStatus="CB_dialogStatus"></jiedianAdd>
+    </el-card>
+</template>
+<script>
+import jiedianAdd from '@/page/system/index_add'
+
+export default {
+    //切换keep时，触发该方法
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            loading: false,
+            tableData: [],
+            dialog: false,
+            depth: [],
+            defaultProps: {
+                children: 'children',
+                label: 'title'
+            },
+            dhid: '',
+            filterText: '',
+            sortstr: "",
+            sortData: []
+        }
+    },
+    watch: {
+        'filterText': function(val) {
+            this.$refs.tree.filter(val);
+        }
+    },
+    methods: {
+        filterNode(value, data) {
+            if (!value) return true;
+            return data.title.indexOf(value) !== -1;
+        },
+        //添加
+        handleADD() {
+            this.dialog = true
+        },
+        //节点排序
+        handleSort() {
+            this.handleDigui(this.tableData)
+            this.sortstr = this.sortData.join(',')
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/node/sort',
+                data: {
+                    sortstr: this.sortstr
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    if (response.data.status.code == 1004 || response.data.status.code !== 1006) {
+                        this.lockout()
+                    }
+                } else {
+                    this.$message({
+                        type: 'success',
+                        message: '排序成功'
+                    })
+                    this.sortData = []
+                    this.getData()
+                }
+            })
+        },
+        //递归获取所有节点
+        handleDigui(data) {
+            for (var i in data) {
+                this.sortData.push(data[i].id + '|' + data[i].sort)
+                if (data[i].children) {
+                    if (data[i].children.length > 0) {
+                        this.handleDigui(data[i].children)
+                    }
+                }
+            }
+        },
+        //获取主数据
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/node/tree',
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    if (response.data.status.code == 1004 || response.data.status.code !== 1006) {
+                        this.lockout()
+                    }
+                } else {
+                    this.tableData = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR')
+                this.loading = false
+            })
+        },
+        CB_dialogStatus(val) {
+            if (val == 1) {
+                this.getData()
+            }
+            this.depth = []
+            this.dhid = ''
+            this.dialog = false
+        },
+        //重新渲染节点
+        renderContent: function(createElement, {
+            node,
+            data,
+            store
+        }) {
+            var self = this;
+            return createElement('span', [
+                createElement('span', node.label),
+                createElement('span', {
+                    attrs: {
+                        class: 'pull-right margin-right-20'
+                    }
+                }, [
+                    createElement('div', {
+                        attrs: {
+                            class: "el-button-group"
+                        }
+                    }, [createElement('el-button', {
+                            attrs: {
+                                size: "small",
+                                type: 'info',
+                                icon: 'plus'
+                            },
+                            on: {
+                                click: function() {
+                                    self.depth = data.depth
+                                    self.dialog = true
+                                }
+                            }
+                        }, "添加子节点"),
+                        createElement('el-button', {
+                            attrs: {
+                                size: "small",
+                                type: 'primary',
+                                icon: 'edit'
+                            },
+                            on: {
+                                click: function() {
+                                    self.dhid = data.id
+                                    self.dialog = true
+                                }
+                            }
+                        }, "编辑"),
+                        createElement('el-button', {
+                            attrs: {
+                                size: "small",
+                                type: 'danger',
+                                icon: 'delete2'
+                            },
+                            on: {
+                                click: function() {
+                                    self.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                                        confirmButtonText: '确定',
+                                        cancelButtonText: '取消',
+                                        type: 'warning'
+                                    }).then(() => {
+                                        self.axios({
+                                            method: 'post',
+                                            data: {
+                                                id: data.id
+                                            },
+                                            url: self.API_ROOT + '/api/node/delete',
+                                            headers: self.$store.getters.Request_Head
+                                        }).then((response) => {
+                                            if (response.data.status.code !== 1001) {
+                                                self.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                                                if (response.data.status.code == 1004 || response.data.status.code !== 1006) {
+                                                    self.lockout()
+                                                }
+                                            } else {
+                                                self.$message({
+                                                    type: 'success',
+                                                    message: '删除成功'
+                                                })
+                                                self.getData()
+                                            }
+                                        }, (error) => {
+                                            self.$emit('API-ERR')
+                                        })
+                                    }).catch(() => {})
+                                }
+                            }
+                        }, "删除"),
+                    ]),
+                ]),
+                //显示节点排序
+                createElement('span', {
+                    attrs: {
+                        class: 'pull-right margin-right-20 bord-lft pad-lft',
+                        style: 'width:80px;'
+                    }
+                }, [
+                    createElement('el-input', {
+                        attrs: {
+                            value: data.sort,
+                            size: 'small'
+                        },
+                        on: {
+                            change: function(val) {
+                                data.sort = val
+                            }
+                        }
+                    })
+                ]),
+                //显示路由名称
+                createElement('span', {
+                    attrs: {
+                        class: 'pull-right margin-right-20 bord-lft pad-lft',
+                        style: 'width:200px'
+                    }
+                }, data.name),
+                //显示接口名称
+                createElement('span', {
+                    attrs: {
+                        class: 'pull-right margin-right-20 bord-lft pad-lft',
+                        style: 'width:200px'
+                    }
+                }, data.api_name)
+            ]);
+        }
+    },
+    components: {
+        jiedianAdd
+    }
+}
+</script>
+<style>
+span.is-leaf {
+    height: 36px;
+    line-height: 36px;
+    width: 25px;
+    background: url('../../assets/img/join.gif') no-repeat;
+    margin: 0px;
+}
+
+.el-tree-node {
+    background-color: #e9e9e9;
+    margin-bottom: 1px;
+}
+
+.el-tree-node__content {
+    background-color: #e9e9e9;
+    margin-bottom: 1px;
+}
+
+.el-tree-node .is-expanded {
+    background-color: #e9e9e9;
+    margin-bottom: 0px;
+}
+
+.el-tree-node__content {
+    background-color: #FFFFFF
+}
+</style>

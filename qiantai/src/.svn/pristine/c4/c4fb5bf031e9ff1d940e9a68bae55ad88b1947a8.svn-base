@@ -1,0 +1,216 @@
+<template>
+    <div class="cy-ds" class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17">
+                    <el-row :gutter="60" class="margin-bottom-30">
+                        <el-col :xs="24" :sm="12" :md="12" :lg="12" v-for="item in linkData" :key="item">
+                            <el-row :gutter="20" class="margin-bottom-50 padding-bottom-10">
+                                <el-col :span="12">
+                                    <div class="daoshi-img index-img-big">
+                                        <img v-if="!item.img" src="../../assets/img/default.jpg" alt="">
+                                        <img v-else :src="item.img" alt="">
+                                    </div>
+                                </el-col>
+                                <el-col :span="12">
+                                    <div class="daoshi-txt">
+                                        <div class="ds-name font-120 margin-bottom-10 aui-ellipsis-2">{{item.name}}</div>
+                                        <div class="ds-zc">
+                                            <div class="ds-zc-title font-120">
+                                                {{item.zhiwei}}
+                                            </div>
+                                            <div class="ds-zc-jj font-110">
+                                                {{item.scly}}
+                                            </div>
+                                            <div class="ds-more margin-top-30">
+                                                <el-button type="danger" @click="chakan(item.id)">查看更多</el-button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </el-col>
+                            </el-row>
+                        </el-col>
+                    </el-row>
+                    <div class="fenye margin-bottom-50">
+                        <div class="block" v-if="total>0">
+                            <el-pagination layout="prev, pager, next" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <div class="index-title margin-bottom-40">
+                            <span class="font-150">智库专栏</span>
+                            <a href="#" class="pull-right"><i class="el-icon-d-arrow-right"></i></a>
+                        </div>
+                        <el-row class="margin-bottom-30 padding-bottom-30 border-bottom">
+                            <el-col class="margin-bottom-30">
+                                <div class="zhuanti-img index-img-big zhuanti-img-first"><img src="../../assets/img/ceshi02.jpg" alt=""></div>
+                            </el-col>
+                            <el-col>
+                                <div class="zhuanti-txt">
+                                    <h4 class="font-140 no-margin"><a href="#">专车收紧后，拼车迎来春天？嘀嗒拼车首获政府</a></h4>
+                                </div>
+                            </el-col>
+                        </el-row>
+                        <el-row :gutter="7" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                            <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                                <div class="zhuanti-img index-img-big"><img src="../../assets/img/ceshi02.jpg" alt=""></div>
+                            </el-col>
+                            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                                <div class="zhuanti-txt">
+                                    <h4 class="font-120 no-margin"><a href="#">专车收紧后，拼车迎来春天？嘀嗒拼车首获政府</a></h4>
+                                </div>
+                            </el-col>
+                        </el-row>
+                        <el-row :gutter="7" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                            <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                                <div class="zhuanti-img index-img-big"><img src="../../assets/img/ceshi02.jpg" alt=""></div>
+                            </el-col>
+                            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                                <div class="zhuanti-txt">
+                                    <h4 class="font-120 no-margin"><a href="#">专车收紧后，拼车迎来春天？嘀嗒拼车首获政府</a></h4>
+                                </div>
+                            </el-col>
+                        </el-row>
+                        <el-row :gutter="7" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                            <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                                <div class="zhuanti-img index-img-big"><img src="../../assets/img/ceshi02.jpg" alt=""></div>
+                            </el-col>
+                            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                                <div class="zhuanti-txt">
+                                    <h4 class="font-120 no-margin"><a href="#">专车收紧后，拼车迎来春天？嘀嗒拼车首获政府</a></h4>
+                                </div>
+                            </el-col>
+                        </el-row>
+                        <el-row :gutter="7" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                            <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                                <div class="zhuanti-img index-img-big"><img src="../../assets/img/ceshi02.jpg" alt=""></div>
+                            </el-col>
+                            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                                <div class="zhuanti-txt">
+                                    <h4 class="font-120 no-margin"><a href="#">专车收紧后，拼车迎来春天？嘀嗒拼车首获政府</a></h4>
+                                </div>
+                            </el-col>
+                        </el-row>
+                        <el-row :gutter="7" class="margin-bottom-30 padding-bottom-30">
+                            <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                                <div class="zhuanti-img index-img-big"><img src="../../assets/img/ceshi02.jpg" alt=""></div>
+                            </el-col>
+                            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                                <div class="zhuanti-txt">
+                                    <h4 class="font-120 no-margin"><a href="#">专车收紧后，拼车迎来春天？嘀嗒拼车首获政府</a></h4>
+                                </div>
+                            </el-col>
+                        </el-row>
+                        <div class="guanggao index-img-big">
+                            <a href="#"><img src="../../assets/img/ceshi02.jpg" alt=""></a>
+                            <span class="font-80">广告</span>
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+            <Index_links></Index_links>
+        </div>
+        <!-- 详情弹出框 -->
+        <!-- <el-dialog :v-model="dialogTableVisible">
+                <el-row :gutter="50" class="">
+                    <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                        <div class="xiangqing-img"><img :src="detailData.img" alt=""></div>
+                    </el-col>
+                    <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                        <div class="zhuanti-txt">
+                            <h4 class="font-120 no-margin margin-bottom-10">{{detailData.name}}</h4>
+                            <h4 class="font-120 no-margin margin-bottom-30">{{detailData.zhiwei}}</h4>
+                            <p>{{detailData.content}}</p>
+                        </div>
+                    </el-col>
+                </el-row>
+            </el-dialog> -->
+    </div>
+</template>
+<script>
+import Index_links from '@/page/index/links'
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+export default {
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            currentPage: 1,
+            loading: false,
+            dialogTableVisible: false,
+            linkData: [],
+            detailData: {}
+        }
+    },
+    methods: {
+        //拉取数据
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zhiku/zhiku',
+                data: {
+                    cid: 30,
+                    page: this.currentPage,
+                    listRows: 14,
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.linkData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+        //显示页条数
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        //弹框
+        chakan(id) {
+            this.dialogTableVisible = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zhiku/detailszhiku',
+                data: {
+                    id: id
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.detailData = response.data.data
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+
+    },
+    computed: mapState({
+        _pageSize: state => state.pageSize,
+        _pageSizes: state => state.pageSizes
+    }),
+    components: {
+        Index_links
+    }
+}
+</script>

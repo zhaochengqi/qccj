@@ -1,0 +1,390 @@
+import Vue from 'vue'
+import Router from 'vue-router'
+import store from '@/store.js'
+
+
+/**======================= 开始引用相关页面组件 ==========================*/
+
+//我的面板，默认主页
+import Page404 from '@/page/404'
+import Layout from '@/page/public/layout'
+import Dashboard from '@/page/Dashboard'
+
+//资讯管理、创谷信息、创说信息
+import News_index from '@/page/news/index'
+import News_add from '@/page/news/add'
+// import Cg_add from '@/page/news/cgadd'
+// import Cs_add from '@/page/news/csadd'
+
+//专题管理
+import Zhuanti_index from '@/page/zhuanti/index'
+import Zhuanti_add from '@/page/zhuanti/add'
+
+//智库人物信息管理
+import Zhiku_renwu_index from '@/page/zhiku/renwu'
+import ZhikuAdd from '@/page/zhiku/add'
+
+//智库文章信息管理
+import Zhiku_wenzhang_index from '@/page/zhiku/wenzhang'
+import WenzhangAdd from '@/page/zhiku/wenzhangadd'
+
+//视频管理
+import Videos_index from '@/page/videos/index'
+import Videos_add from '@/page/videos/add'
+
+
+//杂志管理
+import Zazhi_index from '@/page/zazhi/index'
+import Zazhi_add from '@/page/zazhi/add'
+
+//友情链接管理
+import Links_index from '@/page/links/index'
+
+//广告位管理
+import Guanggao_index from '@/page/guanggao/index'
+//关于我们
+import Gywomen_index from '@/page/guanyuwomen/index'
+//角色组管理
+import users from '@/page/system/users'
+import rules from '@/page/system/rules'
+
+//登录
+import Login from '@/page/public/login'
+import Lock from '@/page/public/lock'
+
+//字典表
+import Category from '@/page/system/category'
+
+//导航菜单管理
+import Navigation from '@/page/system/index'
+
+//操作日志
+import Log from '@/page/log/log'
+
+//修改个人信息
+import gaiInfo from '@/page/system/gaiInfo.vue'
+
+//修改个人信息
+import Docking from '@/page/Docking/index.vue'
+
+/**======================= 结束引用相关页面组件 ==========================*/
+
+
+Vue.use(Router)
+
+//30分钟内无操作则锁屏
+let timeout = 60 * 30
+
+const router = new Router({
+    //设置全局路由点击之后添加的类名
+    linkActiveClass: 'active-link',
+    mode: 'history',
+    //配置路由所在项目中的子目录，默认为“/”
+    // base: '/qccj/dist/',
+    routes: [{
+        //当无法找到匹配的路由时，显示 404
+        path: '*',
+        meta: { pagename: '404 错误！' },
+        component: Page404,
+    }, {
+        //默认重定向至“我的面板”页面
+        path: '/',
+        redirect: { name: 'home' }
+    }, {
+        //主界面布局路由
+        name: 'app',
+        path: '/',
+        meta: { pagename: '主页' },
+        component: Layout,
+        children: [{
+            name: 'home',
+            path: 'Dashboard',
+            meta: { pagename: '我的面板' },
+            component: Dashboard
+        }, {
+            //新闻资讯管理
+            name: 'news',
+            meta: { pagename: '新闻资讯管理', tid: 1 },
+            path: 'news',
+            component: News_index
+        }, {
+            //编辑资讯信息
+            name: 'editNews',
+            meta: { pagename: '编辑资讯信息' },
+            path: 'news-edit-:id',
+            component: News_add
+        }, {
+            //添加资讯信息
+            name: 'addNews',
+            meta: { pagename: '添加新闻资讯' },
+            path: 'news-add',
+            component: News_add
+        }, {
+            //创谷信息管理
+            name: 'chuanggu',
+            meta: { pagename: '创谷信息管理', tid: 2 },
+            path: 'chuanggu',
+            component: News_index
+        }, {
+            //编辑创谷信息
+            name: 'cgedit',
+            meta: { pagename: '编辑创谷信息' },
+            path: 'chuanggu/chuanggu-edit-:id',
+            component: News_add
+        }, {
+            //添加创谷信息
+            name: 'cgadd',
+            meta: { pagename: '添加创谷信息' },
+            path: 'chuanggu-add',
+            component: News_add
+        }, {
+            //创说信息管理
+            name: 'chuangshuo',
+            meta: { pagename: '创说信息管理', tid: 3 },
+            path: 'chuangshuo',
+            component: News_index
+        }, {
+            //编辑创说信息
+            name: 'csedit',
+            meta: { pagename: '编辑创说信息' },
+            path: 'chuangshuo-edit-:id',
+            component: News_add
+        }, {
+            //添加创说信息
+            name: 'csadd',
+            meta: { pagename: '添加创说信息' },
+            path: 'chuangshuo-add',
+            component: News_add
+        }, {
+            //精彩专题管理
+            name: 'zhuanti',
+            meta: { pagename: '精彩专题管理' },
+            path: 'zhuanti',
+            component: Zhuanti_index
+        }, {
+            //添加专题
+            name: 'addZhuanti',
+            meta: { pagename: '添加精彩专题' },
+            path: 'zhuanti-add',
+            component: Zhuanti_add
+        }, {
+            //编辑专题
+            name: 'editZhuanti',
+            meta: { pagename: '编辑精彩专题' },
+            path: 'zhuanti-edit-:id',
+            component: Zhuanti_add
+        }, {
+            //智库人物信息管理
+            name: 'zhiku',
+            meta: { pagename: '人物信息管理' },
+            path: 'zhiku',
+            component: Zhiku_renwu_index
+        }, {
+            //智库人物信息管理添加
+            name: 'zhikuadd',
+            meta: { pagename: '人物信息管理' },
+            path: 'zhikuadd',
+            component: ZhikuAdd
+        }, {
+            //智库文章信息管理
+            name: 'wenzhang',
+            meta: { pagename: '文章信息管理' },
+            path: 'wenzhang',
+            component: Zhiku_wenzhang_index
+        }, {
+            //智库文章信息管理添加
+            name: 'wenzhangadd',
+            meta: { pagename: '文章信息管理' },
+            path: 'wenzhangadd',
+            component: WenzhangAdd
+        }, {
+            //智库信息编辑
+            name: 'zhikuedit',
+            meta: { pagename: '智库信息编辑' },
+            path: 'zhikuedit-:id',
+            component: ZhikuAdd
+        }, {
+            //智库文章信息编辑
+            name: 'wenzhangedit',
+            meta: { pagename: '智库信息编辑' },
+            path: 'wenzhangedit-:id',
+            component: WenzhangAdd
+        }, {
+            //视频信息管理
+            name: 'videos',
+            meta: { pagename: '视频信息管理' },
+            path: 'videos',
+            component: Videos_index
+        }, {
+            //添加视频
+            name: 'addVideo',
+            meta: { pagename: '添加视频信息' },
+            path: 'video-add',
+            component: Videos_add
+        }, {
+            //编辑视频
+            name: 'editVideo',
+            meta: { pagename: '编辑视频信息' },
+            path: 'video-edit-:id',
+            component: Videos_add
+        }, {
+            //杂志信息管理
+            name: 'zazhi',
+            meta: { pagename: '杂志信息管理' },
+            path: 'zazhi',
+            component: Zazhi_index
+        }, {
+            //添加杂志
+            name: 'addZazhi',
+            meta: { pagename: '添加杂志信息' },
+            path: 'zazhi-add',
+            component: Zazhi_add
+        }, {
+            //编辑杂志
+            name: 'editZazhi',
+            meta: { pagename: '编辑杂志信息' },
+            path: 'zazhi-edit-:id',
+            component: Zazhi_add
+        }, {
+            //友情链接管理
+            name: 'links',
+            meta: { pagename: '友情链接管理' },
+            path: 'links',
+            component: Links_index
+        }, {
+            //广告位管理
+            name: 'guanggao',
+            meta: { pagename: '广告信息管理' },
+            path: 'guanggao',
+            component: Guanggao_index
+        }, {
+            //关于我们
+            name: 'gywomen',
+            meta: { pagename: '关于我们', id: 1 },
+            path: 'about_us',
+            component: Gywomen_index
+        }, {
+            //联系我们
+            name: 'lxwomen',
+            meta: { pagename: '联系我们', id: 2 },
+            path: 'contact_us',
+            component: Gywomen_index
+        }, {
+            //新闻爆料
+            name: 'xinwenbao',
+            meta: { pagename: '新闻爆料', id: 3 },
+            path: 'baoliao',
+            component: Gywomen_index
+        }, {
+            //加入我们
+            name: 'jrwomen',
+            meta: { pagename: '加入我们', id: 4 },
+            path: 'join_us',
+            component: Gywomen_index
+        }, {
+            //角色组管理
+            name: 'rules',
+            path: 'rules',
+            meta: { pagename: '角色组管理' },
+            component: rules
+        }, {
+            //导航菜单管理
+            name: 'navigation',
+            path: 'navigation',
+            meta: { pagename: '导航菜单管理' },
+            component: Navigation
+        }, {
+            //字典表
+            name: 'category',
+            path: 'category',
+            meta: { pagename: '字典表管理' },
+            component: Category
+        }, {
+            //用户信息管理
+            name: 'users',
+            path: 'system-users',
+            meta: { pagename: '成员管理' },
+            component: users
+        }, {
+            //操作日志
+            name: 'log',
+            path: 'log',
+            meta: { pagename: '操作日志' },
+            component: Log
+        }, {
+            //修改个人信息
+            name: 'gaiInfo',
+            path: 'info',
+            meta: { pagename: '修改个人信息' },
+            component: gaiInfo
+        }, {
+            //个人对接管理
+            name: 'Docking',
+            path: 'docking',
+            meta: { pagename: '个人对接管理' },
+            component: Docking
+        }]
+    }, {
+        //登录
+        name: 'login',
+        meta: { pagename: '用户登录' },
+        path: '/login',
+        component: Login
+    }, {
+        //锁屏
+        name: 'lock',
+        meta: { pagename: '账号锁定，请输入密码登录' },
+        path: '/lock',
+        component: Lock
+    }],
+    //当开启history模式时，此项有效，实现返回上一个页面时默认将滚动条定位到原位置
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) {
+            return savedPosition
+        } else {
+            return { x: 0, y: 0 }
+        }
+    }
+})
+
+//检测token是否存在，否则退回登录
+router.beforeEach((to, from, next) => {
+    if (to.name !== 'login' && !store.state.userinfo.userinfo.token) {
+        next('login')
+    } else {
+        if (to.name !== 'lock' && store.state.lock.status) {
+            next('lock')
+        } else {
+            let now_time = new Date().getTime() / 1000
+            //超过配置的时间后锁屏
+            if (store.state.last_time && (now_time - store.state.last_time > timeout) && to.name !== 'lock') {
+                let lock_data = {
+                    status: true,
+                    fullPath: to.fullPath
+                }
+                store.commit('setLock', lock_data);
+                next('lock')
+            } else {
+                store.commit('setLast_time', now_time);
+
+                if (to.name == 'lock') {
+                    var lock = {
+                        status: true,
+                        fullPath: from.fullPath
+                    }
+                } else {
+                    var lock = {
+                        status: false,
+                        fullPath: to.fullPath
+                    }
+                }
+                store.commit('setLock', lock);
+                next();
+            }
+
+        }
+
+    }
+})
+
+export default router

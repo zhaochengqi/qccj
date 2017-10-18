@@ -1,0 +1,82 @@
+<template>
+    <el-row v-loading="loading" element-loading-text="拼命加载中">
+        <div class="index-title margin-bottom-40 padding-top-10 index-title-zhiku">
+            <p class=""></p>
+            <span class="font-150">创谷</span>
+            <router-link :to="{name:'chuanggu'}" style="border:0" class="pull-right">
+                <i class="el-icon-d-arrow-right"></i>
+            </router-link>
+        </div>
+        <div v-for="item in chuangguData" :key="item">
+            <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                    <div class="zixun-img index-img-big">
+                        <router-link :to="{name:'details',params:{id:item.id}}">
+                            <img v-if="!item.img" src="../../assets/img/default.jpg" alt="">
+                            <img v-else :src="item.img+'!289x173'" alt="">
+                        </router-link>
+                    </div>
+                </el-col>
+                <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                    <div class="zixun-txt">
+                        <h4 class="font-150">
+                            <router-link :to="{name:'details',params:{id:item.id}}">
+                                {{item.title}}
+                            </router-link>
+                        </h4>
+                        <p class="font-110 aui-ellipsis-2">
+                            {{item.daodu}}
+                        </p>
+                        <div class="zixun-date margin-top-40">
+                            <el-row>
+                                <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                    <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                </el-col>
+                                <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                    <i class="fa fa-thumbs-o-up"></i> 0
+                                </el-col>
+                            </el-row>
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+    </el-row>
+</template>
+<script>
+export default {
+    activated: function() {
+        this.getChuanggu()
+    },
+    data() {
+        return {
+            chuangguData: [],
+            loading: false
+        }
+    },
+    methods: {
+        getChuanggu() {
+            this.loading = true;
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/index/news',
+                data: {
+                    listRows: 3,
+                    tid: 2,
+                    size: 1
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.chuangguData = response.data.data.news
+                }
+                this.loading = false;
+            }, (error) => {
+                this.loading = false;
+                this.$emit('API-ERR')
+            })
+        }
+    }
+}
+</script>

@@ -1,0 +1,415 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row :style="{ 'min-height': _PageHeight+'px'}">
+            <el-form ref="form" :model="form" :rules="rules" label-width="140px">
+                <!-- 注意：增加rules验证 -->
+                <el-form-item label="视频名称" prop="title">
+                    <el-col :md="16">
+                        <el-input v-model="form.title" placeholder="请填写视频名称 "></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="是否推荐" required>
+                    <el-switch on-text="是" off-text="否" on-value="2" off-value='1' v-model="form.is_tuijian"></el-switch>
+                    <el-tooltip class="item" effect="dark" content="如果设置为“是”，则这条视频会显示到“推荐视频”位置中去" placement="right">
+                        <i class="ti-help-alt mar-lft "></i>
+                    </el-tooltip>
+                </el-form-item>
+                <!-- 上传视频图片 -->
+                <el-form-item label="视频图片" required>
+                    <el-col :md="12">
+                        <QN_upload buttonID="uploadimg" keyPrefix="image" :dragdrop="dragdrop" :filters="filtersImage" max_file_size="500kb" type="drag" @Callback-UploadProgress.self="CB_UploadProgress" @Callback-GetFileUrl.self="CB_GetFileUrl" @Callback-Error.self="CB_Error"></QN_upload>
+                        <div class="el-upload__tip" style="line-height:25px">
+                            比例为4 : 3 ，上传jpg/png/bmp格式图片，大小不能超过500KB
+                        </div>
+                    </el-col>
+                    <el-col :md="12">
+                        <el-progress type="circle" :percentage="qn_upload.img_upload_progress" :status='qn_upload.img_upload_status' v-if="qn_upload.img_upload_progress>0&&qn_upload.img_upload_progress<100"></el-progress>
+                        <span v-else-if="form.img" class="newsImage">
+                            <img :src="form.img" alt="" class="thumbnail" style="max-width:255px;max-height:200px">
+                            <span class="el-icon-circle-cross"  @click="rmImage">
+                            </span>
+                        </span>
+                    </el-col>
+                </el-form-item>
+                <!-- 上传视频文件 -->
+                <el-form-item label="视频上传" required>
+                    <el-col :span="12" id="uploadVideo">
+                        <QN_upload type="drag" keyPrefix="video" container='uploadVideo' drop_element="uploadVideo" :dragdrop="dragdrops" :filters="filtersVideo" max_file_size="500mb" @Callback-UploadProgress.self="CB_UploadProgress_video" @Callback-GetFileUrl.self="CB_GetFileUrl_video" @Callback-Error.self="CB_Error_video"></QN_upload>
+                        <div class="el-upload__tip" style="line-height:25px">
+                            上传mp4/flv格式视频，且不超过500MB
+                        </div>
+                    </el-col>
+                    <el-col :span="12">
+                        <el-progress type="circle" :percentage="qn_upload.video_upload_progress" :status='qn_upload.video_upload_status' v-if="qn_upload.video_upload_progress>0&&qn_upload.video_upload_progress<100"></el-progress>
+                        <span v-else-if="form.video_file" class="newsImage">
+                            <div id="videosQCCj"><div >{{videosName}} </div><span class="el-icon-circle-cross" @click="rmFile"> </span></div>
+                        </span>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="视频介绍">
+                    <vueEditor :editContent="form.content" @Callback-Content="CB_Content"></vueEditor>
+                </el-form-item>
+                <hr>
+                <el-form-item label="页面关键词（SEO）">
+                    <el-select v-model="form.keywords" multiple filterable allow-create placeholder="请选择或填写关键词内容，尽量填写能够定位当前资讯内容的准确关键词，数量不要太多 " style="width:100%">
+                        <el-option v-for="(item,index) in news_source_data" :key="item.index" :label="item" :value="item">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="页面描述（SEO）">
+                    <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 4}" :maxlength='msmaxlength' placeholder="100字以内，主要显示到网页源码中的“description”属性中，利于搜索引用优化 " v-model="form.miaoshu"></el-input>
+                </el-form-item>
+                <el-form-item label="发布日期" prop="fabu_time">
+                    <el-col :md="8">
+                        <el-date-picker v-model="form.fabu_time" type="datetime" placeholder="选择资讯发布时间" style="width:100%" @change="timeChange" format='yyyy-MM-dd HH:mm'>
+                        </el-date-picker>
+                    </el-col>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" size="large" v-if="authCheck(99)&&authCheck(64)" :loading='loadingbiao' @click="onSubmit">保存视频信息</el-button>
+                    <el-button @click="quxiaoSubmit" size="large">取消</el-button>
+                </el-form-item>
+            </el-form>
+        </el-row>
+    </el-card>
+</template>
+<script>
+import Vue from 'vue'
+import QN_upload from '@/components/qiniu-upload'
+
+//导入vuex辅助函数
+import {
+    mapState,
+    mapGetters
+} from 'vuex'
+
+//导入编辑器组件（共用）
+import vueEditor from '@/components/editor'
+import goBack from '@/components/goBack'
+
+export default {
+    activated: function() {
+        if (this.$route.params.id) {
+            this.getData()
+        } else {
+            this.form.fabu_time = new Date()
+        }
+    },
+    deactivated() {
+        this.$refs['form'].resetFields();
+        this.form = {
+            title: '',
+            is_tuijian: '1',
+            miaoshu: '',
+            content: '',
+            fabu_time: '',
+            video_file: '',
+            keywords: ['汽车财经'],
+            img: ''
+        }
+    },
+    data() {
+        return {
+            msmaxlength: 50,
+            //上传表单数据
+            form: {
+                title: '',
+                is_tuijian: '1',
+                miaoshu: '',
+                content: '',
+                keywords: ['汽车财经'],
+                video_file: '',
+                fabu_time: '',
+                img: ''
+            },
+            dragdrop: true,
+            dragdrops: true,
+            //七牛
+            qn_upload: {
+                img_upload_progress: 0,
+                img_upload_status: '',
+                video_upload_progress: 0,
+                video_upload_status: ''
+            },
+            //时间选择
+            time: '',
+            //验证器
+            rules: {
+                title: [{
+                    required: true,
+                    message: '请填写视频名称！',
+                    trigger: 'blur'
+                }],
+                fabu_time: [{
+                    type: 'date',
+                    required: true,
+                    message: '请选择资讯发布时间',
+                    trigger: 'change'
+                }],
+            },
+            loading: false,
+            //按钮loading
+            loadingbiao: false,
+            //图片格式
+            filtersImage: {
+                mime_types: [{
+                    title: "Image Files",
+                    extensions: "jpg,png,bmp,jpeg"
+                }]
+            },
+            //视频格式
+            filtersVideo: {
+                mime_types: [{
+                    title: "Video Files",
+                    extensions: "flv,mp4"
+                }]
+            },
+            videosName: ""
+        }
+    },
+    methods: {
+        //提交数据
+        onSubmit() {
+            this.loadingbiao = true;
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    this.setData();
+                } else {
+                    this.loadingbiao = false
+                    return false;
+                }
+            });
+        },
+        //点击删除图片
+        rmImage() {
+            this.$confirm('确定要移除图片吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.form.img = ''
+            }).catch(() => {});
+        },
+        //点击删除文件
+        rmFile() {
+            this.$confirm('确定要移除视屏吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.form.video_file = ''
+            }).catch(() => {});
+        },
+        //取消发布
+        quxiaoSubmit() {
+            this.$router.go(-1)
+        },
+        //详细内容
+        CB_Content(content, token) {
+            this.form.content = content
+        },
+        //时间选择后
+        timeChange(value) {
+            this.time = value
+        },
+        //处理数据
+        setData() {
+            if (this.form.img == '') {
+                this.$message.error('请上传视频图片！')
+                this.loadingbiao = false
+                return
+            }
+            if (this.form.video_file == '') {
+                this.$message.error('请上传视频！')
+                this.loadingbiao = false
+                return
+            }
+            var url
+            if (this.$route.params.id) {
+                url = this.API_ROOT + '/api/videos/update';
+            } else {
+                url = this.API_ROOT + '/api/videos/insert';
+            }
+            this.form.img = this.form.img.split("!")[0]
+            this.form.fabu_time = this.time;
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    this.form.fabu_time = new Date(this.time);
+                } else {
+                    this.$router.go(-1)
+                    this.$message.success('数据保存成功');
+                }
+                this.loadingbiao = false
+            }, (error) => {
+                this.loadingbiao = false
+                this.form.fabu_time = new Date(this.time);
+                this.$emit('API-ERR');
+            })
+        },
+        //编辑页面进来
+        getData() {
+            this.loading = true;
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/videos/read',
+                data: {
+                    id: this.$route.params.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                    this.form.fabu_time = new Date(this.form.fabu_time)
+                    let video = this.form.video_file.split("/")
+                    this.videosName = video[video.length - 1]
+                    delete this.form.add_time
+                }
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loading = false
+            })
+        },
+        /**
+         * [回调处理七牛上传相关数据]
+         * 其他更多回调方法参考 七牛组件
+         */
+        //文件上传过程，主要用于展现上传进度
+        CB_UploadProgress(file) {
+            this.qn_upload.img_upload_status = ''
+            this.qn_upload.img_upload_progress = file.percent
+            if (file.percent == 100) {
+                this.qn_upload.img_upload_status = 'success'
+            }
+        },
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl(file) {
+            this.$message({
+                message: '图片上传成功',
+                type: 'success'
+            });
+            this.form.img = file.split('!')[0]
+        },
+
+        //获取上传错误信息
+        CB_Error(err, info) {
+            this.qn_upload.img_upload_status = 'exception'
+            if (err.code == -600) {
+                this.$message({
+                    message: '图片最大上传大小不能超过500KB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '图片上传错误！',
+                    type: 'warning'
+                });
+            }
+        },
+
+        /**
+         * 上传视频回调
+         * 文件上传过程，主要用于展现上传进度
+         */
+        CB_UploadProgress_video(file) {
+            this.qn_upload.video_upload_status = ''
+            this.qn_upload.video_upload_progress = file.percent
+            if (file.percent == 100) {
+                this.qn_upload.video_upload_status = 'success'
+            }
+        },
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl_video(file) {
+            this.$message({
+                message: '视频上传成功',
+                type: 'success'
+            });
+            this.form.video_file = file.split('!')[0]
+            let video = this.form.video_file.split("/")
+            this.videosName = video[video.length - 1]
+        },
+
+        //获取上传错误信息
+        CB_Error_video(err, info) {
+            this.qn_upload.video_upload_status = 'exception'
+            if (err.code == -600) {
+                this.$message({
+                    message: '视频最大上传大小不能超过200MB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '视频上传错误！',
+                    type: 'warning'
+                });
+            }
+        }
+
+
+
+    },
+    //计算属性
+    computed: {
+        ...mapGetters({
+            headersImage: 'Request_Head'
+        }),
+        ...mapState({
+            news_source_data: state => state.news_source_type
+
+        }),
+    },
+    //注意别忘记挂载组件
+    components: {
+        vueEditor,
+        goBack,
+        QN_upload
+    }
+}
+</script>
+<style>
+#videosQCCj {
+    line-height: 36px;
+}
+
+#videosQCCj>div {
+    display: inline-block;
+    width: 230px;
+    overflow: hidden;
+}
+
+#videosQCCj>span {
+    position: absolute;
+    right: 0px;
+    top: 12px;
+}
+
+#videosQCCj>span:hover {
+    cursor: pointer;
+    color: #FF4949;
+}
+</style>

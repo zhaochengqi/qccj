@@ -1,0 +1,232 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row :style="{ 'min-height': _PageHeight+30+'px'}">
+            <el-form ref="form" :model="form" :rules="rules" :ref="form" label-width="100px">
+                <!-- 注意：增加rules验证 -->
+                <el-form-item label="专题名称" prop="title">
+                    <el-col :md="16">
+                        <el-input v-model="form.title" placeholder="请填写精彩专题名称，必填项"></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item prop="source" label="专题标签">
+                    <el-col :md="8">
+                        <el-select v-model="form.source" filterable clearable allow-create placeholder="填写专题标签，必填项" style="width:100%">
+                            <el-option v-for="item in news_source_data" :key="item" :label="item" :value="item">
+                            </el-option>
+                        </el-select>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="专题图片" prop="img">
+                    <el-upload class="avatar-uploader" :action="uploadImgUrl" :show-file-list="true" :on-success="handleAvatarSuccess" :on-preview="handlePictureCardPreview" :on-remove="handleRemove" accept=".png,.jpg,.jpeg,.bmp">
+                        <img v-if="form.img" :src="form.img" class="avatar">
+                        <i v-else class="el-icon-upload avatar-uploader-icon"></i>
+                        <div slot="tip" class="el-upload__tip" style="line-height:25px">
+                            上传精彩专题图片，比例为4 : 3 ，非必传，上传jpg/png/bmp格式图片，大小不能超过500KB
+                        </div>
+                    </el-upload>
+                </el-form-item>
+                <el-form-item label="专题导读">
+                    <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 4}" placeholder="填写精彩专题导读内容，100字以内，尽量简洁明了，一般用于显示到专题列表中" v-model="form.daodu"></el-input>
+                </el-form-item>
+                <el-form-item label="链接地址" prop="link_url">
+                    <el-col :md="16">
+                        <el-input placeholder="请填写专题链接地址" v-model="form.link_url">
+                            <template slot="prepend">http://</template>
+                        </el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" size="large" @click="onSubmit">保存精彩专题</el-button>
+                    <el-button @click="quxiaoSubmit" size="large">取消</el-button>
+                </el-form-item>
+            </el-form>
+        </el-row>
+    </el-card>
+</template>
+<script>
+import Vue from 'vue'
+
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+//导入编辑器组件（共用）
+import vueEditor from '@/components/editor'
+import goBack from '@/components/goBack'
+
+export default {
+    activated: function() {
+        // this.getRead()
+    },
+    data() {
+        return {
+            //图片上传接口
+            uploadImgUrl: this.API_ROOT + '/api/baoming/uploadimg',
+            loading: false,
+            form: {
+                title: '',
+                label: '',
+                daodu: '',
+                link_url: '',
+                img: ''
+            },
+            time: '',
+            rules: {
+                title: [{
+                    required: true,
+                    message: '请填写专题名称',
+                    trigger: 'blur'
+                }],
+                source: [{
+                    required: true,
+                    message: '请输入专题标签',
+                    trigger: 'change,blur'
+                }],
+                link_url: [{
+                    required: true,
+                    message: '请填写专题链接地址',
+                    trigger: 'blur'
+                }],
+                img: [{
+                    required: true,
+                    message: '请至少上传一张图片',
+                    trigger: 'change'
+                }],
+                daodu: [{
+                    required: true,
+                    message: '请填写专题导读',
+                    trigger: 'blur'
+                }]
+            }
+        }
+    },
+    methods: {
+        onSubmit() {
+            this.setData()
+        },
+        //取消发布
+        quxiaoSubmit() {
+            this.$router.go(-1)
+        },
+        CB_Content(content, token) {
+            this.form.content = content
+        },
+        timeChange(value) {
+            this.time = value
+        },
+        //处理数据
+        setData() {
+            var url
+            if (this.$route.params.id) {
+                url = this.API_ROOT + '/api/notice/update'
+            } else {
+                url = this.API_ROOT + '/api/notice/insert'
+            }
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$router.go(-1)
+                    this.form = {
+                        title: '',
+                        is_top: '1',
+                        fabu_time: '',
+                        content: ''
+                    }
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+        //编辑页面进来
+        getRead() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/notice/read',
+                data: {
+                    id: this.$route.params.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loading = false
+            })
+        },
+        /**
+         * 图片处理
+         */
+        //上传成功
+        handleAvatarSuccess(file, imgs, filelist) {
+
+        },
+        //点击已上传文件时
+        handlePictureCardPreview(file) {
+
+        },
+        //移除图片
+        handleRemove(file, imgs) {
+
+        }
+    },
+    //计算属性
+    computed: mapState({
+        news_source_data: state => state.news_source_type
+
+    }),
+    //注意别忘记挂载组件
+    components: {
+        vueEditor,
+        goBack
+    }
+}
+</script>
+<style>
+.avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: #fbfdff
+}
+
+.avatar-uploader .el-upload:hover {
+    border-color: #20a0ff;
+}
+
+.avatar-uploader-icon {
+    font-size: 50px;
+    color: #ccc;
+    width: 220px;
+    height: 145px;
+    line-height: 145px;
+    text-align: center;
+}
+
+.avatar {
+    width: 220px;
+    height: 145px;
+    display: block;
+}
+</style>

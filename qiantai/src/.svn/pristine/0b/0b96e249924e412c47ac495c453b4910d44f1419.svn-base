@@ -1,0 +1,176 @@
+<template>
+    <div class="video-player">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17">
+                    <dl class="zhuanti-list" v-loading="loading" element-loading-text="拼命加载中">
+                        <dt class="margin-bottom-20">
+                            <video-player ref="videoPlayer" :options="playerOptions" @play="onPlayerPlay($event)" @pause="onPlayerPause($event)" @ended="onPlayerEnded($event)" @loadeddata="onPlayerLoadeddata($event)" @waiting="onPlayerWaiting($event)" @playing="onPlayerPlaying($event)" @timeupdate="onPlayerTimeupdate($event)" @canplay="onPlayerCanplay($event)" @canplaythrough="onPlayerCanplaythrough($event)" @ready="playerReadied" @statechanged="playerStateChanged($event)">
+                            </video-player>
+                        </dt>
+                        <dd class="font-140 margin-bottom-30">
+                            {{videoData.title}}
+                        </dd>
+                        <dd class="font-100 margin-bottom-30">
+                            {{videoData.miaoshu}}
+                        </dd>
+                    </dl>
+                    <tuijianVideo @CB-bofangVideo='CB_bofangVideo'></tuijianVideo>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <Index_zixun>挂载最新资讯</Index_zixun>
+                        <!-- 广告 -->
+                        <guanggao weizhi='视频内页' listRows='1'></guanggao>
+                    </div>
+                </el-col>
+            </el-row>
+            <Index_links></Index_links>
+        </div>
+    </div>
+</template>
+<script>
+//挂载最新资讯
+import Index_zixun from '@/page/news/zixun'
+//挂载友情链接
+import Index_links from '@/page/index/links'
+//挂载推荐视频
+import tuijianVideo from './tuijianVideo';
+//广告位
+import guanggao from '@/page/news/guanggao'
+
+export default {
+    beforeCreate: function() {
+        //设置当前页面标题名称
+        document.title = this.$route.meta.pagename;
+    },
+    activated() {
+        this.getVideo(this.$route.params.id)
+    },
+    data() {
+        return {
+            loading: false,
+            playerOptions: {
+                // component options
+                start: 0,
+                playsinline: false,
+                // videojs options
+                muted: true,
+                language: 'zh-CN',
+                height: '530px',
+                playbackRates: [0.7, 1.0, 1.5, 2.0],
+                sources: [{
+                    type: "video/mp4",
+                    src: "http://osaeqd83t.bkt.clouddn.com/video_20170609_u4wyk8pysx4r5~1.mp4"
+                }],
+                poster: "",
+            },
+            videoData: '',
+        }
+    },
+    mounted() {
+        // console.log('this is current player instance object', this.player)
+        setTimeout(() => {
+            // console.log('dynamic change options', this)
+            this.playerOptions.muted = false
+        }, 2000)
+    },
+    computed: {
+        player() {
+            return this.$refs.videoPlayer.player
+        }
+    },
+    methods: {
+        CB_bofangVideo(val) {
+            this.getVideo(val)
+        },
+        getVideo(id) {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/videos/read',
+                data: {
+                    id: id
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.playerOptions.sources[0].src = response.data.data.video_file
+                    this.playerOptions.poster = response.data.data.img
+                    this.videoData = response.data.data;
+                    document.querySelector('meta[name="keywords"]').content = response.data.data.keywords.join(',')
+                    document.querySelector('meta[name="description"]').content = response.data.data.miaoshu
+                    document.title = response.data.data.title
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        },
+        // listen event
+        onPlayerPlay(player) {
+            // console.log('player play!', player)
+        },
+        onPlayerPause(player) {
+            // console.log('player pause!', player)
+        },
+        onPlayerEnded(player) {
+            // console.log('player ended!', player)
+        },
+        onPlayerLoadeddata(player) {
+            // console.log('player Loadeddata!', player)
+        },
+        onPlayerWaiting(player) {
+            // console.log('player Waiting!', player)
+        },
+        onPlayerPlaying(player) {
+            // console.log('player Playing!', player)
+        },
+        onPlayerTimeupdate(player) {
+            // console.log('player Timeupdate!', player.currentTime())
+        },
+        onPlayerCanplay(player) {
+            // console.log('player Canplay!', player)
+        },
+        onPlayerCanplaythrough(player) {
+            // console.log('player Canplaythrough!', player)
+        },
+        // or listen state event
+        playerStateChanged(playerCurrentState) {
+            // console.log('player current update state', playerCurrentState)
+        },
+        // player is ready
+        playerReadied(player) {
+            // console.log('example 01: the player is readied', player)
+        }
+    },
+    components: {
+        tuijianVideo,
+        Index_links,
+        guanggao,
+        Index_zixun
+    }
+}
+</script>
+<style scoped>
+.zhuanti-list {
+    padding-right: 80px;
+}
+
+.zhuanti-list dt {
+    height: 530px;
+    overflow: hidden;
+    /*border-radius: 5px;*/
+    position: relative;
+}
+
+.zhuanti-list dt > img {
+    width: 100%;
+}
+
+.zhuanti-list dd {
+    color: #582424;
+}
+</style>

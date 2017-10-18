@@ -1,0 +1,261 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row :gutter="20">
+                <el-col :md="6">
+                    <el-input placeholder="检索：用户名、姓名" icon="search" @change="keysChange" v-model="keys">
+                    </el-input>
+                </el-col>
+                <el-col :md="5">
+                    <el-select v-model="rulesZU" style="width:100%;" @change="rulesChange" clearable placeholder="不限角色组">
+                        <el-option v-for="item in rules_juesezu" :key="item.id" :label="item.title" :value="item.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="13" class="text-right">
+                    <el-button-group v-if="authCheck(113)||authCheck(114)">
+                        <el-button type="primary" class="daochu_xiangmu" v-if="authCheck(113)" @click="addAdmin"><i class="fa fa-user-plus"></i> 添加管理员</el-button>
+                        <el-button type="danger" icon="delete" class="daochu_xiangmu" v-if="authCheck(114)" @click="AllDelete">批量删除</el-button>
+                        <goBack class="daochu_xiangmu"></goBack>
+                    </el-button-group>
+                    <goBack v-else></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" border style="width: 100%" @selection-change="handleSelectionChange">
+                <el-table-column type="selection" width="55">
+                </el-table-column>
+                <el-table-column prop="account" label="用户名" min-width="120">
+                </el-table-column>
+                <el-table-column prop="name" label="姓名" min-width="120">
+                </el-table-column>
+                <el-table-column prop="nickname" label="角色组" show-overflow-tooltip min-width="120">
+                </el-table-column>
+                <el-table-column prop="status" label="状态" width="120" :filters="[{ text: '正常', value: 1 }, { text: '禁用', value: 2 }]" :filter-method="filterTag">
+                    <template scope="scope">
+                        <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" close-transition>
+                            {{scope.row.status === 1 ? '正常' : '禁用'}}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                </el-table-column>
+                <el-table-column label="操作" v-if="authCheck(42)" width="150">
+                    <template scope="scope">
+                        <el-button size="mini" class="BNanniu" v-if="authCheck(115)&&scope.row.status==1" type='warning' @click="handleStop(scope.row,2)">
+                            <i class="ti-lock mini"></i>禁用
+                        </el-button>
+                        <el-button size="mini" class="BNanniu" v-if="authCheck(115)&&scope.row.status==2" type='success' @click="handleStop(scope.row,1)">
+                            <i class="ti-unlock mini"></i>启用
+                        </el-button>
+                        <el-button size="mini" class="BNanniu" type="danger" v-if="authCheck(114)" @click="handleDelete(scope.row.id)">
+                            <i class="el-icon-delete"></i> 删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+        <UsersAdd :dialogFormVisible="dialogFormVisible" @CB-dialogFormVisible="CB_dialogFormVisible"></UsersAdd>
+    </el-card>
+</template>
+<script>
+import goBack from '@/components/goBack.vue'
+import UsersAdd from './users_add.vue'
+export default {
+    activated: function() {
+        this._order = 'update_time';
+        this._sort = 'desc';
+        this.getData()
+    },
+    data() {
+        return {
+            keys: '',
+            rulesZU: '',
+            loading: false,
+            tableData: [],
+            multipleSelection: [],
+            currentPage: 1,
+            total: 0,
+            _order: '',
+            _sort: "",
+            dialogFormVisible: false
+        }
+    },
+    methods: {
+        //搜索
+        keysChange(val) {
+            this.keys = val;
+            this.getData();
+        },
+        //选择角色组
+        rulesChange(val) {
+            this.rulesZU = val;
+            this.getData()
+        },
+        //禁用启用
+        handleStop(row, val) {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/user/update',
+                data: {
+                    id: row.id,
+                    status: val
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.getData()
+                }
+            }, (error) => {
+                this.$emit('API-ERR')
+            })
+        },
+        //添加
+        addAdmin() {
+            this.dialogFormVisible = true
+        },
+        //多选框
+        handleSelectionChange(val) {
+            this.multipleSelection = val;
+        },
+        filterTag(value, row) {
+            return row.status === value;
+        },
+        //删除
+        handleDelete(id) {
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.deleteData(id)
+            }).catch(() => {
+
+            });
+        },
+        //批量删除
+        AllDelete() {
+            if (this.multipleSelection.length == 0) {
+                return this.$message.warning('请选择您要删除的内容')
+            }
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                for (var i = 0; i < this.multipleSelection.length; i++) {
+                    this.multipleSelection[i] = this.multipleSelection[i].id
+                }
+                this.multipleSelection = this.multipleSelection.join(",")
+                this.deleteData(this.multipleSelection)
+            }).catch(() => {
+
+            });
+        },
+        handleSizeChange(val) {
+            this.getData()
+        },
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData()
+        },
+        //获取数据
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/user',
+                data: {
+                    group_id: this.$route.params.id,
+                    page: this.currentPage,
+                    listRows: this._pageSize,
+                    auth_id: this.rulesZU,
+                    keys: this.keys
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data;
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        },
+        //给子组件调用的函数
+        CB_dialogFormVisible() {
+            this.dialogFormVisible = false
+            this.getData();
+        },
+        //删除
+        deleteData(id) {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/user/delete',
+                data: {
+                    id: id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功!'
+                    });
+                    this.multipleSelection = [];
+                    this.getData()
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        }
+    },
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        },
+        rules_juesezu: function() {
+            return this.$store.state.rules_juesezu
+        }
+    },
+    components: {
+        goBack,
+        UsersAdd
+    }
+
+}
+</script>
+<style>
+.el-table {
+    font-size: 13px;
+}
+
+.daochu_xiangmu {
+    height: 36.5px;
+}
+
+.BNanniu {
+    height: 24px;
+}
+</style>

@@ -1,0 +1,153 @@
+<template>
+    <div class="cy-ds">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17">
+                    <el-row :gutter="36" class="margin-bottom-30" v-loading="loading " element-loading-text="拼命加载中">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8" v-for="item in gridData" :key="item.id">
+                            <dl class="zhuanti-list">
+                                <dt>
+                                    <router-link :to="{name:'bofang',params:{id:item.id}}">
+                                        <img :src="item.img+'!230x162'" onerror="javascript:this.src='../assets/img/default.jpg';" alt="">
+                                        <a></a>
+                                    </router-link>
+                                </dt>
+                                <dd>
+                                    <p class="video-title aui-ellipsis-2">
+                                        <router-link :to="{name:'bofang',params:{id:item.id}}">{{item.title}}
+                                        </router-link>
+                                    </p>
+                                    <p class="video-date">{{item.time}}</p>
+                                </dd>
+                            </dl>
+                        </el-col>
+                    </el-row>
+                    <div class="fenye padding-top-40 margin-bottom-50">
+                        <div class="block" v-if="total>0">
+                            <el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-sizes="[15, 20, 30, 40]" :page-size="pageSize" :total="total">
+                            </el-pagination>
+                        </div>
+                    </div>
+                    <!-- 推荐 -->
+                    <tuijianVideo></tuijianVideo>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <!-- 精彩专题 -->
+                        <Index_zhuanti></Index_zhuanti>
+                        <div class="guanggao index-img-big" v-if="guanggao">
+                            <a :href="guanggao.link_url" target="_blank">
+                                <img v-if="!guanggao.img" src="../../assets/img/default.jpg" alt="">
+                                <img v-else :src="guanggao.img+'!335x300'" alt="">
+                            </a>
+                            <span class="font-80">广告</span>
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+        <Index_links></Index_links>
+    </div>
+</template>
+<script>
+import Index_links from '@/page/index/links';
+import Index_zhuanti from '@/page/index/zhuanti';
+import tuijianVideo from './tuijianVideo';
+export default {
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            pageSize: 15,
+            gridData: [],
+            total: 0,
+            dialogTableVisible: false,
+            guanggao: '',
+            currentPage: 1,
+            loading: false
+        };
+    },
+    methods: {
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData()
+        },
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/videos/index',
+                data: {
+                    page: this.currentPage,
+                    listRows: this.pageSize,
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.total = response.data.count;
+                    this.gridData = response.data.data;
+                    this.guanggao = response.data.guanggao;
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        }
+
+    },
+    components: {
+        Index_links,
+        Index_zhuanti,
+        tuijianVideo
+    }
+}
+</script>
+<style scoped>
+.zhuanti-list {}
+
+.zhuanti-list dt {
+    border: 10px solid transparent;
+    height: 160px;
+    overflow: hidden;
+    border-radius: 5px;
+    position: relative;
+}
+
+.zhuanti-list dt > img {
+    width: 100%;
+}
+
+.zhuanti-list dt a {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: url(../../assets/img/tb-video.png) no-repeat center;
+}
+
+.zhuanti-list dt:hover {
+    border-color: #efefef;
+}
+
+.zhuanti-list dd {
+    padding: 0 10px;
+}
+
+.zhuanti-list dd .video-title {
+    font-size: 16px;
+    color: #582424;
+    height: 48px;
+}
+
+.zhuanti-list dd .video-title a {
+    color: #582424;
+}
+
+.zhuanti-list dd .video-date {
+    color: #b5b5b5;
+}
+</style>

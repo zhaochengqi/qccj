@@ -1,0 +1,329 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}" class="padding-20">
+            <el-form :model="formData" :label-position="labelPosition">
+                <el-row>
+                    <el-col class="text-2x text-center text-dark margin-bottom-50" :span="24">土木工程学院推荐免试研究生申请表</el-col>
+                    <el-form-item label="1、国家英语四、六级成绩（附成绩单原件、交一份复印件。国家四级500分或六级430分以上）">
+                        <el-col :span="24" class="pad-lft">
+                            <el-upload class="avatar-uploader" :action="uploadImgUrl" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
+                                <img v-if="imageUrl" :src="imageUrl" class="avatar">
+                                <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                                <div slot="tip" class="el-upload__tip">上传符合分数要求的国家英语四、六级成绩单扫描件（任一即可），只能上传jpg/png文件，且不超过500kb</div>
+                            </el-upload>
+                        </el-col>
+                    </el-form-item>
+                    <hr />
+                    <el-form-item label="2、专业基础课程或专业必修课程原始考核有无不及格？">
+                        <el-col :span="24" class="pad-lft">
+                            共有
+                            <font class="text-danger">3</font> 门专业基础课程不及格，
+                            <font class="text-danger">1</font> 门专业必修课不及格。
+                            <el-button type="text">查看</el-button>
+                            <!-- <el-popover ref="popoverl" placement="right" width="400" trigger="click">
+                                <el-table :data="gridData">
+                                    <el-table-column width="150" property="date" label="日期"></el-table-column>
+                                    <el-table-column width="100" property="name" label="姓名"></el-table-column>
+                                    <el-table-column width="300" property="address" label="地址"></el-table-column>
+                                </el-table>
+                            </el-popover> -->
+                        </el-col>
+                    </el-form-item>
+                    <hr />
+                    <el-form-item label="3、前三年是否完成规定的必修课及已取得的总学分？">
+                        <el-col :span="24" class="pad-lft text-success">
+                            已全部完成
+                        </el-col>
+                    </el-form-item>
+                    <hr />
+                    <el-form-item label="4、是否参加过院级及以上学生创新实践活动？">
+                        <el-col :span="24" class="pad-lft">
+                            <p>
+                                共参加过
+                                <font class="text-danger">5</font> 次创新实践活动，请勾选需要提交的创新实践活动。
+                            </p>
+                            <el-table :data="tableData3" height="250" border style="width: 100%">
+                                <el-table-column type="selection" width="55"></el-table-column>
+                                <el-table-column prop="date" label="活动日期" width="130"></el-table-column>
+                                <el-table-column prop="name" label="活动名称"></el-table-column>
+                                <el-table-column prop="address" label="获奖情况"></el-table-column>
+                                <el-table-column prop="address" label="备注"></el-table-column>
+                            </el-table>
+                        </el-col>
+                    </el-form-item>
+                    <hr />
+                    <el-form-item label="5、《国家学生体质健康标准》测试是否达标？">
+                        <el-col :span="24" class="pad-lft text-success">
+                            体测成绩已达标
+                        </el-col>
+                    </el-form-item>
+                    <hr />
+                    <el-form-item label="6、获奖加分（上传获奖证明）">
+                        <el-row v-for="(it,idx) in formData.jiafen" :key="it.type" class="margin-top-10">
+                            <el-col :md="2" :sm="3" class="pad-rgt text-right">
+                                第{{idx+1}}项
+                            </el-col>
+                            <el-col :md="8" class="pad-rgt">
+                                <el-cascader :options="options" style="width:100%" v-model="it.selectedOptions" @change="handleChange" placeholder="请选择奖项名称">
+                                </el-cascader>
+                            </el-col>
+                            <el-col :md="4" class="pad-rgt">
+                                <el-select v-model="it.type" placeholder="请选择获奖级别" style="width:100%">
+                                    <el-option v-for="item in jibie_level" :key="item.id" :label="item.title" :value="item.id">
+                                    </el-option>
+                                </el-select>
+                            </el-col>
+                            <el-col :md="6">
+                                <el-upload class="upload-demo" action="https://jsonplaceholder.typicode.com/posts/" :on-preview="handlePreview" :on-remove="handleRemove" :file-list="fileList">
+                                    <el-button size="small" type="success">上传获奖证书</el-button>
+                                    <span class="el-upload__tip">jpg/png文件，500kb以内</span>
+                                </el-upload>
+                            </el-col>
+                            <el-col :md="4">
+                                <el-button type="primary" icon="delete" @click="handelRemove(it)"></el-button>
+                            </el-col>
+                        </el-row>
+                        <el-row class="mar-top">
+                            <el-col :offset="2" :span="24">
+                                <el-button :plain="true" type="primary" size="small" @click="addDomain"><i class="ti-plus"></i> 继续添加奖项</el-button>
+                            </el-col>
+                        </el-row>
+                    </el-form-item>
+                    <hr />
+                    <el-form-item class="font-130" label="7、是否受过行政处分？">
+                        <el-col :span="24" class="pad-lft text-success">
+                            <el-radio-group v-model="formData.chufen">
+                                <el-radio :label="1">受过处分</el-radio>
+                                <el-radio :label="2">没有受过处分</el-radio>
+                            </el-radio-group>
+                        </el-col>
+                    </el-form-item>
+                    <hr />
+                    <el-form-item prop="yixiang" label="8、选择你的保研意向，可以多选。">
+                        <el-col :span="24" class="pad-lft text-success">
+                            <el-checkbox-group v-model="formData.yixiang">
+                                <el-checkbox label="1" class="pad-rgt">直博</el-checkbox>
+                                <el-checkbox label="2" class="pad-rgt">硕士</el-checkbox>
+                                <el-checkbox label="3">校外</el-checkbox>
+                            </el-checkbox-group>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-checkbox v-model="formData.checkCn">本人承诺：上表所填信息全部属实，若有虚假，同意接受取消推免资格；如果被录取并且符合入学条件，则按时入学，不办理出国留学手续和找工作等。</el-checkbox>
+                    </el-form-item>
+                </el-row>
+                <el-row class="margin-top-20">
+                    <el-form-item>
+                        <el-button type="primary" size="large" :loading="loadingJiaZai" icon="upload" @click="submitForm('form')"><span>提交申请表</span></el-button>
+                    </el-form-item>
+                </el-row>
+            </el-form>
+        </div>
+    </el-card>
+</template>
+<script>
+export default {
+    // 以下数据仅作demo使用，正式数据从数据仓库和接口，注意修改各自数据节点的名称。
+    activated: function() {
+        // this.getData();
+    },
+    data() {
+        return {
+            loading: false,
+            tableData: [],
+            dialogVisible: false,
+            uploadImgUrl: '',
+            dialogImageUrl: '',
+            imageUrl: '',
+            formData: {
+                type: 1,
+                yixiang: [],
+                chufen: 1,
+                jiafen: [{
+                    selectedOptions: '',
+                    type: ''
+                }],
+                checkCn: true,
+
+            },
+            labelPosition: 'top',
+            tableData3: [{
+                date: '2016-05-03',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }, {
+                date: '2016-05-02',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }, {
+                date: '2016-05-04',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }, {
+                date: '2016-05-01',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }, {
+                date: '2016-05-08',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }],
+            options: [{
+                value: 'zhinan',
+                label: '专业类',
+                children: [{
+                    value: 'shejiyuanze',
+                    label: '美国土木工程师协会（太平洋赛区）学生土木工程竞赛团体'
+                }, {
+                    value: 'daohang',
+                    label: '美国土木工程师协会（太平洋赛区）学生土木工程竞赛各单项赛 '
+                }]
+            }, {
+                value: 'zujian',
+                label: '数学类',
+                children: [{
+                    value: 'basic',
+                    label: '美国国际大学生数学建模竞赛（MCM）'
+                }, {
+                    value: 'form',
+                    label: '交叉学科建模竞赛（ICM）'
+                }]
+            }, {
+                value: 'ziyuan',
+                label: '力学类'
+            }],
+            fileList: [],
+            loadingJiaZai: false,
+            gridData: [{
+                date: '2016-05-02',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }, {
+                date: '2016-05-04',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }, {
+                date: '2016-05-01',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }, {
+                date: '2016-05-03',
+                name: '王小虎',
+                address: '上海市普陀区金沙江路 1518 弄'
+            }]
+        }
+
+    },
+    methods: {
+        //新增文本框
+        addDomain() {
+            this.formData.jiafen.push({
+                value: '',
+                key: Date.now()
+            });
+        },
+        //删除文本框
+        handelRemove(item) {
+            if (this.formData.jiafen.length == 1) return
+            var index = this.formData.jiafen.indexOf(item)
+            if (index !== -1) {
+                this.formData.jiafen.splice(index, 1)
+            }
+        },
+        handleCheck(val) {
+
+        },
+        handleBAO() {
+
+        },
+        handleRemove() {
+
+        },
+        //全选
+        handleChange(val) {
+
+        },
+        handlePreview() {
+
+        },
+        handlePictureCardPreview() {
+            this.dialogImageUrl = file.url;
+            this.dialogVisible = true;
+        },
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/',
+                data: {},
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.tableData = response.data.data
+                 };
+                this.loading = false
+            }, (error) => {
+                this.$emit('API_ERR');
+                this.loading = false
+            });
+        },
+        handleAvatarSuccess(res, file) {
+            this.imageUrl = URL.createObjectURL(file.raw);
+        },
+        beforeAvatarUpload(file) {
+            const isJPG = file.type === 'image/jpeg';
+            const isLt2M = file.size / 1024 / 1024 < 2;
+
+            if (!isJPG) {
+                this.$message.error('上传头像图片只能是 JPG 格式!');
+            }
+            if (!isLt2M) {
+                this.$message.error('上传头像图片大小不能超过 2MB!');
+            }
+            return isJPG && isLt2M;
+        }
+    },
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        },
+        jibie_level: function() {
+            return this.$store.state.jiafenlevel
+        }
+    }
+}
+</script>
+<style>
+.avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-uploader .el-upload:hover {
+    border-color: #20a0ff;
+}
+
+.avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 145px;
+    height: 180px;
+    line-height: 180px;
+    text-align: center;
+}
+
+.avatar {
+    width: 145px;
+    height: 180px;
+    display: block;
+}
+</style>

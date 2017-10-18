@@ -1,0 +1,137 @@
+<template>
+    <div class="cy-ds">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="margin-bottom-50">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17" v-loading="loading" element-loading-text="拼命加载中">
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom" v-for="item in linkData" :key="(item.id)">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <router-link :to="{name:'details', params:{id:item.id}}">
+                                    <img v-if="!item.img" src="../../assets/img/default.jpg" alt="">
+                                    <img v-else :src="item.img+'!289x173'" alt="">
+                                </router-link>
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150  margin-bottom-10 aui-ellipsis-1">
+                                      <router-link :to="{name:'details',params:{id:item.id}}" >
+                                        {{item.title}}
+                                      </router-link>
+                                  </h4>
+                                <p class="font-110 aui-ellipsis-2">{{item.daodu}}</p>
+                                <div class="zixun-date margin-top-40">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> &nbsp; {{item.author_name}} &nbsp;&nbsp;&nbsp;{{item.time}}
+                                        </el-col>
+                                        <!-- <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col> -->
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <div class="fenye padding-top-40 margin-bottom-50">
+                        <div class="block" v-if="total>0">
+                            <el-pagination layout="prev, pager, next" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <Index_zhuanti></Index_zhuanti>
+                        <Index_chuangshuo v-if="tid!=3"></Index_chuangshuo>
+                        <div class="guanggao index-img-big" v-if="advert!=null">
+                            <a :href="advert.link_url" target="_blank">
+                                <img v-if="!advert.img" src="../../assets/img/default.jpg" alt="">
+                                <img v-else :src="advert.img+'!335x300'" alt="">
+                            </a>
+                            <span class="font-80">广告</span>
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+            <Index_links>此处显示友情链接</Index_links>
+        </div>
+    </div>
+</template>
+<script>
+import Index_zhuanti from '@/page/index/zhuanti'
+import Index_chuangshuo from '@/page/index/chuangshuo'
+import Index_links from '@/page/index/links'
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+export default {
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            tid: this.$route.meta.tid,
+            total: 0,
+            currentPage: 1,
+            loading: false,
+            linkData: [],
+            advert: null
+        }
+    },
+    watch: {
+        '$route.meta.tid': function(newValue, oldValue) {
+            if (newValue == '' || !newValue) return
+            this.getData()
+        }
+    },
+    methods: {
+        //显示页条数
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        handleCurrentChange(val) {
+            this.loading = true;
+            this.currentPage = val;
+            this.getData();
+        },
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/news',
+                data: {
+                    tid: this.$route.meta.tid,
+                    page: this.currentPage,
+                    listRows: 14,
+                    type: '资讯首页'
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.linkData = response.data.data.news
+                    this.advert = response.data.data.guangao
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        }
+
+    },
+    computed: mapState({
+        _pageSize: state => state.pageSize,
+        _pageSizes: state => state.pageSizes
+    }),
+    components: {
+        Index_zhuanti,
+        Index_chuangshuo,
+        Index_links
+    }
+}
+</script>

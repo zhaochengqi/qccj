@@ -1,0 +1,62 @@
+<template>
+    <header id="navbar">
+        <div id="navbar-container" class="boxed">
+            <!--Brand logo & name-->
+            <!--================================-->
+            <div class="navbar-header">
+                <router-link :to="{name:'home'}" class="navbar-brand">
+                    <img src="../../assets/img/biaoti.png" alt="汽车财经网" class="brand-icon" width="23">
+                    <div class="brand-title">
+                        <span class="brand-text">汽车财经网-管理后台</span>
+                    </div>
+                </router-link>
+            </div>
+            <!--================================-->
+            <!--End brand logo & name-->
+            <!--Navbar Dropdown-->
+            <!--================================-->
+            <div class="navbar-content clearfix">
+                <ul class="nav navbar-top-links pull-left">
+                    <li class="tgl-menu-btn">
+                        <a class="mainnav-toggle" href="#">
+                            <i class="demo-pli-view-list"></i>
+                        </a>
+                    </li>
+                    <Notify_head>顶部状态栏通知消息</Notify_head>
+                </ul>
+                <ul class="nav navbar-top-links pull-right">
+                    <li id="dropdown-user">
+                        <a :href="web_root" class="text-right" target="_blank">
+                            <div class="username hidden-xs text-danger">
+                                <i class="fa fa fa-send-o"></i> 前往网站主页
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <!--================================-->
+            <!--End Navbar Dropdown-->
+        </div>
+    </header>
+</template>
+<script>
+import Notify_head from './Tongzhi_head'
+
+export default {
+    created: function() {
+        
+    },
+    data() {
+        return {
+            web_root: this.WEB_ROOT
+        }
+    },
+    methods: {
+
+
+    },
+    components: {
+        Notify_head
+    }
+}
+</script>

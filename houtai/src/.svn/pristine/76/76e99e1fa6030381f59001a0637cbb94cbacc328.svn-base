@@ -1,0 +1,247 @@
+<template>
+    <el-dialog :title="title" size='small' :visible.sync="dialogVisible" @close="closeDialog">
+        <el-row>
+            <el-col :span="23">
+                <el-form :model="form" ref="form" :rules="rules" label-suffix='：'>
+                    <el-form-item label="选择角色组" :label-width="formLabelWidth" prop="group_id">
+                        <el-select v-model="form.group_id" style="width:100%;" multiple clearable placeholder="选择角色组">
+                            <el-option v-for="(item,index) in rules_juesezu" :key="index" :label="item.title" :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="用户名" required :label-width="formLabelWidth" prop="account">
+                        <el-input :disabled="disabled" placeholder="请填写用户名" v-model="form.account"></el-input>
+                    </el-form-item>
+                    <el-form-item label="姓名" :label-width="formLabelWidth" prop="nickname">
+                        <el-input v-model="form.nickname" placeholder="请填写姓名"></el-input>
+                    </el-form-item>
+                    <el-form-item label="手机" :label-width="formLabelWidth" prop="phone">
+                        <el-input v-model="form.phone" placeholder="请填写手机号"></el-input>
+                    </el-form-item>
+                    <el-form-item label="邮箱" :label-width="formLabelWidth" required prop="email">
+                        <el-input v-model="form.email" placeholder="请填写邮箱"></el-input>
+                    </el-form-item>
+                    <el-form-item v-if="!id" label="密码" :label-width="formLabelWidth" required prop="password">
+                        <el-input v-model="form.password" placeholder="请填写密码" type="password"></el-input>
+                    </el-form-item>
+                    <el-form-item v-if="!id" label="确认密码" :label-width="formLabelWidth" required prop="qrpassword">
+                        <el-input v-model="form.qrpassword" placeholder="请再次填写密码" type="password"></el-input>
+                    </el-form-item>
+                </el-form>
+            </el-col>
+        </el-row>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" :loading="loadingBiao" v-if="authCheck(120)&&authCheck(121)" @click="onSubmit">确定保存</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script type="text/javascript">
+var zz = /^[a-zA-Z0-9]{6,20}$/;
+var zzEmail = /^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$/;
+export default {
+    props: ['dialogFormVisible', 'id'],
+    data() {
+        return {
+            form: {
+                group_id: [],
+                account: "",
+                nickname: "",
+                password: "",
+                qrpassword: "",
+                phone: '',
+                email: ''
+            },
+            loadingBiao: false,
+            disabled: false,
+            url: '',
+            title: '',
+            formLabelWidth: '120px',
+            dialogVisible: false,
+            //教师ID
+            uid: '',
+            //教师姓名
+            name: '',
+            rules: {
+                group_id: [{
+                    type: 'array',
+                    required: true,
+                    message: '请选择角色组！',
+                    trigger: 'change'
+                }],
+                account: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请输入用户名！'));
+                        } else {
+                            if (!zz.test(value)) {
+                                callback(new Error('用户名只能是6-20位英文大小写字母,数字！'));
+                            }
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                nickname: [{
+                    required: true,
+                    message: '请输入姓名！',
+                    trigger: 'blur'
+                }],
+                email: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请输入邮箱！'));
+                        } else {
+                            if (!zzEmail.test(value)) {
+                                callback(new Error('请输入格式正确邮箱！'));
+                            }
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                password: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请输入密码！'));
+                        } else {
+                            if (this.form.qrpassword !== '') {
+                                this.$refs['form'].validateField('qrpassword');
+                            }
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                qrpassword: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请再次输入密码！'));
+                        } else if (value !== this.form.password) {
+                            callback(new Error('两次输入密码不一致！'));
+                        } else {
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+            },
+        }
+    },
+    watch: {
+        'dialogFormVisible': function(newvalue, oldvalue) {
+            this.dialogVisible = newvalue
+            if (!newvalue)
+                this.$refs['form'].resetFields();
+        },
+        'id': function(newvalue, oldvalue) {
+            if (newvalue == oldvalue) return;
+            if (newvalue && newvalue != -1) {
+                this.disabled = true;
+                this.url = this.API_ROOT + '/api/user/update'
+                this.title = '编辑管理员'
+                this.getData()
+            } else {
+                this.title = '添加管理员'
+                this.disabled = false;
+                this.url = this.API_ROOT + '/api/user/insert'
+            }
+        }
+    },
+    methods: {
+        //确定
+        onSubmit() {
+            this.loadingBiao = true;
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    if (this.form.phone != '') {
+                        if (/^1[34578]{1}\d{9}$/.test(this.form.phone)) {
+                            this.setData()
+                        } else {
+                            this.loadingBiao = false;
+                            this.$message.warning('请填写正确的手机号码');
+                        }
+                    } else {
+                        this.setData()
+                    }
+                } else {
+                    this.loadingBiao = false;
+                    return false
+                }
+            })
+        },
+        closeDialog() {
+            this.form = {
+                group_id: [],
+                account: "",
+                nickname: "",
+                password: "",
+                qrpassword: "",
+                phone: '',
+                email: ''
+            };
+            this.$emit('CB-dialogFormVisible');
+        },
+        //插入数据
+        setData() {
+            this.form.group_id = this.form.group_id.join(",")
+            this.axios({
+                method: 'post',
+                url: this.url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.form.group_id = this.setArray(this.form.group_id);
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.dialogVisible = false;
+                    this.$message.success('数据保存成功');
+                }
+                this.loadingBiao = false;
+            }, (error) => {
+                this.loadingBiao = false;
+                this.form.group_id = this.setArray(this.form.group_id);
+                this.$emit('API-ERR')
+            })
+        },
+        //重置返回INT值得数组
+        setArray(val) {
+            val = val.split(",");
+            for (var i = 0; i < val.length; i++) {
+                val[i] = parseInt(val[i])
+            }
+            return val
+        },
+        //获取数据
+        getData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/user/read',
+                data: {
+                    id: this.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.form.group_id = []
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                    this.form.qrpassword = this.form.password
+                    for (var i in this.form.group_id) {
+                        this.form.group_id[i] = Number(this.form.group_id[i])
+                    }
+                }
+            }, (error) => {
+                this.form.group_id = []
+                this.$emit('API-ERR')
+            })
+        }
+    },
+    computed: {
+        rules_juesezu: function() {
+            return this.$store.state.rules_juesezu
+        }
+    }
+}
+</script>

@@ -1,0 +1,161 @@
+<template>
+    <el-dialog title="添加管理员" size='small' :visible.sync="dialogVisible" @close="closeDialog">
+        <el-form :model="form" ref="form" :rules="rules" label-suffix='：'>
+            <el-form-item label="选择角色组" :label-width="formLabelWidth" prop="title">
+                <el-select v-model="form.title" style="width:100%;" multiple clearable placeholder="选择角色组">
+                    <el-option v-for="item in rules_juesezu" :key="item.value" :label="item.label" :value="item.value">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="用户名" :label-width="formLabelWidth" prop="zhanghao">
+                <el-input v-model="form.zhanghao"></el-input>
+            </el-form-item>
+            <el-form-item label="姓名" :label-width="formLabelWidth" prop="mingzi">
+                <el-input v-model="form.mingzi"></el-input>
+            </el-form-item>
+            <el-form-item label="密码" :label-width="formLabelWidth" required prop="mima">
+                <el-input v-model="form.mima"></el-input>
+            </el-form-item>
+            <el-form-item label="确认密码" :label-width="formLabelWidth" required prop="qrmima">
+                <el-input v-model="form.qrmima"></el-input>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="cancel">取 消</el-button>
+            <el-button type="primary" @click="onSubmit">确 定</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script type="text/javascript">
+export default {
+    props: ['dialogFormVisible'],
+    data() {
+        return {
+            form: {
+                title: "",
+                zhanghao: "",
+                mingzi: "",
+                mima: "",
+                qrmima: "",
+            },
+            formLabelWidth: '120px',
+            dialogVisible: false,
+            //教师ID
+            uid: '',
+            //教师姓名
+            name: '',
+            //那个角色组
+            group_id: '',
+            rules: {
+                title: [{
+                    required: true,
+                    message: '请选择角色组！',
+                    trigger: 'change'
+                }],
+                zhanghao: [{
+                    required: true,
+                    message: '请填写用户名！',
+                    trigger: 'blur'
+                }],
+                mingzi: [{
+                    required: true,
+                    message: '请填写姓名！',
+                    trigger: 'blur'
+                }],
+                mima: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请输入密码！'));
+                        } else {
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                qrmima: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请再次输入密码！'));
+                        } else if (value !== this.form.mima) {
+                            callback(new Error('两次输入密码不一致！'));
+                        } else {
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+            },
+        }
+    },
+    watch: {
+        'dialogFormVisible': function(newvalue) {
+            this.dialogVisible = newvalue
+            console.log(this.rules_juesezu)
+        }
+    },
+    methods: {
+        //确定
+        onSubmit() {
+            this.getData()
+        },
+        //取消
+        cancel() {
+            this.$emit('CB-dialogFormVisible');
+        },
+        closeDialog() {
+            this.$emit('CB-dialogFormVisible');
+        },
+        //查教师是否村在
+        getData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/authgroup/check',
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.uid = this.form.account;
+                    this.name = response.data.data.name;
+                    this.group_id = this.$route.params.id;
+                    this.setData()
+                }
+            }, (error) => {
+                this.$emit('API-ERR')
+            })
+        },
+        //插入数据
+        setData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/authgroupaccess/insert',
+                data: {
+                    //教师ID
+                    uid: this.uid,
+                    //教师姓名
+                    name: this.name,
+                    //那个角色组
+                    group_id: this.group_id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form.account = "";
+                    this.dialogVisible = false;
+                }
+            }, (error) => {
+                this.$emit('API-ERR')
+            })
+        }
+
+    },
+    computed: {
+        rules_juesezu: function() {
+            return this.$store.state.rules_juesezu
+        }
+    }
+}
+</script>

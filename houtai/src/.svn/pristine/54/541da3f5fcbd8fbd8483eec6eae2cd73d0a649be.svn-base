@@ -1,0 +1,129 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="6" class="pad-rgt">
+                    <el-input placeholder="检索：学生学号、姓名" icon="search" v-model="keys">
+                    </el-input>
+                </el-col>
+                <el-col :md="6" class="pad-rgt">
+                    <el-select style="width:100%" v-model="kequn" placeholder="不限专业课群">
+                        <el-option v-for="item in kequn_data" :label="item.title" :value="item.id" :key="item.id"></el-option>
+                    </el-select>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe highlight-current-row border style="width: 100%" @sort-change="handleSort">
+                <el-table-column type="selection" width="50" fixed></el-table-column>
+                <el-table-column fixed width="80" prop="xm" label="姓名" fixed></el-table-column>
+                <el-table-column min-width="80" prop="xh" label="学号" sortable="custom"></el-table-column>
+                <el-table-column min-width="180" prop="kequn_title" label="专业课群" show-overflow-tooltip></el-table-column>
+                <el-table-column min-width="120" prop="phone" label="手机号码"></el-table-column>
+                <el-table-column min-width="120" prop="email" label="邮箱" show-overflow-tooltip></el-table-column>
+                <el-table-column min-width="100" prop="jsmc" label="一榜成绩" sortable="custom"></el-table-column>
+                <el-table-column min-width="100" prop="jsmc" label="二榜成绩" sortable="custom"></el-table-column>
+                <el-table-column min-width="100" prop="jsmc" label="三榜成绩" sortable="custom"></el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next , jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+    </el-card>
+</template>
+<script>
+export default {
+    activated: function() {
+        this._order = "xh"
+        this._sort = "asc"
+            // this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: '',
+            tableData: [],
+            _order: '',
+            _sort: '',
+            kequn: ''
+        }
+
+    },
+    // 监听事件
+    watch: {
+        // 监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'keys': function(newValue, oldValue) {
+            this.keys = newValue;
+            this.getData();
+        },
+    },
+    methods: {
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = "xh"
+                this._sort = "asc"
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData()
+        },
+        //当页码发生改变
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        //当一页显示多少条发生改变
+        handleSizeChange(val) {
+            this.$store.commit("setPageSize", val);
+            this.getData();
+        },
+        //获取数据
+        getData() {
+            this.loading = true
+            this.$http.post(this.API_ROOT + '/api/chengji', {
+                _order: this._order,
+                _sort: this._sort,
+                page: this.currentPage,
+                listRows: this._pageSize,
+                keys: this.keys,
+                kequn: this.kequn
+            }, this.$store.getters.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.tableData = response.data.data;
+                    this.total = response.data.count;
+                };
+                this.loading = false
+            }, (error) => {
+                this.$emit('API_ERR');
+                this.loading = false
+            });
+        }
+    },
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        },
+        //专业课群
+        kequn_data: function() {
+            return this.$store.state.kequnfangxiang
+        }
+    }
+}
+</script>

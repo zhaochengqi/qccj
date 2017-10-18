@@ -1,0 +1,166 @@
+<template>
+    <div class="cy-ds" >
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="margin-bottom-50">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17" v-loading="loading" element-loading-text="拼命加载中">
+                    <div class="news-details ">
+                        <h1 class="margin-bottom-30 font-180">{{formData.title}}</h1>
+                        <div class="news-date margin-bottom-30 font-110">{{formData.author_name}} &nbsp;&nbsp;发表于&nbsp; {{formData.fabu_time}} &nbsp;&nbsp;来源：&nbsp;{{formData.source}}</div>
+                        <div class="news-jj margin-bottom-40 font-140">
+                            {{formData.daodu}}
+                        </div>
+                        <div class="news-main font-140">
+                            <p v-html="formData.content"></p>
+                        </div>
+                    </div>
+                    <div class="fenxiang padding-top-10">
+                        <el-row class="">
+                            <el-col :xs="10" :sm="16" :md="16" :lg="16">
+                                <div class="jiathis_style_24x24">
+                                    <a class="jiathis_button_qzone"></a>
+                                    <a class="jiathis_button_tsina"><img src="../../assets/img/weibo.png" alt=""></a>
+                                    <a class="jiathis_button_tqq"></a>
+                                    <a class="jiathis_button_weixin"></a>
+                                    <a class="jiathis_button_renren"></a>
+                                    <a href="http://www.jiathis.com/share?uid=2139217" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+                                    <a class="jiathis_counter_style"></a>
+                                </div>
+                                <!-- <div class="bdsharebuttonbox">
+                                    <a href="http://service.weibo.com/share/share.php?appkey=&title=&url=&searchPic=false&style=simple" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"><img src="../../assets/img/weibo.png" alt=""></a>
+                                    <a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"><img src="../../assets/img/weixin.png" alt=""></a>
+                                </div> -->
+                            </el-col>
+                            <el-col :xs="14" :sm="8" :md="8" :lg="8">
+                                <div class="zixun-date">
+                                    <i class="fa fa-thumbs-o-up"></i> 顶 0　<i class="fa fa-thumbs-o-down"></i> 踩 0
+                                    <!-- <i class="el-icon-star-off"></i> 收藏 0 -->
+                                </div>
+                            </el-col>
+                        </el-row>
+                    </div>
+                    <div class="inner-title padding-top-30 margin-bottom-40 margin-top-40">
+                        <p class="no-margin"></p>
+                        <span class="font-150">相关文章</span>
+                    </div>
+                    <el-row :gutter="20">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8" v-for="item in article" :key="item.id">
+                            <div class="tjyd-img index-img-big margin-bottom-10">
+                                <router-link :to="{name:'details',params:{id:item.id}}" class="font-120">
+                                    <img v-if="!item.img" src="../../assets/img/default.jpg" alt="">
+                                    <img v-else :src="item.img" alt="">
+                                </router-link>
+                            </div>
+                            <div class="tjyd-xt">
+                                <router-link :to="{name:'details',params:{id:item.id}}" class="font-120">
+                                    {{item.title}}
+                                </router-link>
+                            </div>
+                        </el-col>
+                    </el-row>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <Inner_zixun>此处显示最新资讯</Inner_zixun>
+                        <Inner_zhuanti>此处显示专题</Inner_zhuanti>
+                        <div class="guanggao index-img-big" v-if="advert!=null">
+                            <a :href="advert.link_url">
+                                <img v-if="!advert.img" src="../../assets/img/default.jpg" alt="">
+                                <img v-else :src="advert.img" alt="">
+                            </a>
+                            <span class="font-80">广告</span>
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+            <Inner_links>此处显示友情链接</Inner_links>
+        </div>
+    </div>
+</template>
+<script type="text/javascript">
+var jiathis_config = {
+    data_track_clickback: 'true'
+};
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=2139217" charset="utf-8"></script>
+<!-- <script type="text/javascript" charset="utf-8" src="http://static.bshare.cn/b/buttonLite.js#style=-1&amp;uuid=&amp;pophcol=2&amp;lang=zh"></script>
+<script type="text/javascript" charset="utf-8" src="http://static.bshare.cn/b/bshareC0.js"></script> -->
+<script>
+//挂载最新资讯
+import Inner_zixun from '@/page/news/zixun'
+//挂载专题
+import Inner_zhuanti from '@/page/index/zhuanti'
+//挂载友情链接
+import Inner_links from '@/page/index/links'
+export default {
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            formData: {},
+            advert: {},
+            article: [],
+            loading: false
+        }
+    },
+    methods: {
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/details',
+                data: {
+                    id: this.$route.params.id,
+                    type: '资讯内页'
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.formData = response.data.data.news
+                    this.advert = response.data.data.guangao
+                    this.article = response.data.data.article
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        }
+    },
+    components: {
+        Inner_zixun,
+        Inner_zhuanti,
+        Inner_links
+    }
+}
+</script>
+<style scoped>
+.news-details {
+    color: #501515;
+}
+.news-details img{
+    max-width: 100%;
+}
+.news-details h1 {
+    color: #501515;
+    margin-top: 0;
+}
+
+.news-jj {
+    font-weight: 600;
+}
+
+.fenxiang {
+    width: 590px;
+    border-top: 1px dashed #dcdcdc;
+}
+
+.fx-menu a {
+    display: inline-block;
+}
+
+.fx-menu img {
+    float: left;
+}
+</style>

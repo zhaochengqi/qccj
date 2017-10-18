@@ -1,0 +1,98 @@
+<template>
+    <el-col :xs="14" :sm="8" :md="8" :lg="8">
+        <div class="zixun-date">
+            <i class="fa fa-thumbs-o-up" style="cursor:pointer; " :class="dingclass" @click="onSet(id,1)"></i> 顶 {{ding_count}}　<i class="fa fa-thumbs-o-down" :class="caiclass" style="cursor:pointer" @click="onSet(id,2)"></i> 踩 {{cai_count}}
+            <!-- <i class="el-icon-star-off"></i> 收藏 0 -->
+        </div>
+    </el-col>
+</template>
+<script>
+export default {
+    props: ['id', 'cai_count', 'ding_count', 'state'],
+    activated() {
+        if (this.state == 1) {
+            this.dingclass = "yanse"
+            this.caiclass = ""
+        } else if (this.state == 2) {
+            this.dingclass = "yanse"
+            this.caiclass = ""
+        } else {
+            this.dingclass = "yanse"
+            this.caiclass = "yanse"
+        }
+    },
+    data() {
+        return {
+            formData: {},
+            dingclass: '',
+            caiclass: ''
+        }
+    },
+    methods: {
+        /**
+         * [onSet 点击顶和踩]
+         * @param  {[type]} id    [当前文章]
+         * @param  {[type]} type  [新闻为1，智库为2]
+         * @param  {[type]} state [赞为1，踩为2]
+         */
+        onSet(id, state) {
+            console.log(this.state)
+                // if (this.state == 1) {
+                //     this.$message({
+                //         message: '已经点过赞了！',
+                //         type: 'warning'
+                //     });
+                //     return
+                // } else if (this.state == 2) {
+                //     this.$message({
+                //         message: '已经踩过了！',
+                //         type: 'warning'
+                //     });
+                //     return
+                // } else {
+                //     this.$message({
+                //         message: '不能重复操作！',
+                //         type: 'warning'
+                //     });
+                //     return
+                // }
+            this.setData(id, state)
+            if (state == 1) {
+                this.dingclass = "yanse"
+                this.caiclass = ""
+            } else {
+                this.dingclass = ""
+                this.caiclass = "yanse"
+            }
+        },
+        //处理数据
+        setData(id, state) {
+            var url
+            url = this.API_ROOT + '/home_api/news/dac';
+            this.axios({
+                method: 'post',
+                url: url,
+                data: {
+                    id: id,
+                    state: state
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$emit('CB-dincai', id)
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+    },
+    computed: {},
+}
+</script>
+<style>
+.yanse {
+    color: red;
+}
+</style>

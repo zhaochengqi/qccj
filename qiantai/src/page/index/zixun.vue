@@ -1,0 +1,73 @@
+<template>
+    <el-row >
+        <div class="index-title margin-bottom-40 padding-top-10">
+            <p class="zixun_title" v-if="zxid==1"></p>
+            <p class="chuanggu_title" v-if="zxid==2"></p>
+            <span class="font-150">{{title}}</span>
+            <router-link :to="{name: news}" style="border:0" class="pull-right">
+                <i class="el-icon-d-arrow-right"></i>
+            </router-link>
+        </div>
+        <div v-for="item in zixunData" :key="item.id" v-if="zixunData.length>0">
+            <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                    <div class="zixun-img index-zixun-img index-img-big">
+                        <a :href="url+item.id" target="_Blank">
+                            <img :src="item.img?item.img+'!289x173':'./static/img/default.jpg'" alt="">
+                        </a>
+                    </div>
+                </el-col>
+                <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                    <div class="zixun-txt">
+                        <h4 class="font-150 margin-bottom-10 aui-ellipsis-1">
+                            <a :href="url+item.id" target="_Blank">
+                            {{item.title}}
+                            </a>
+                        </h4>
+                        <p class="font-110 aui-ellipsis-2">{{item.daodu}}</p>
+                        <div class="zixun-date margin-top-50">
+                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> &nbsp;&nbsp;{{item.author_name}}　　{{item.time}}
+                            <!-- <i class="fa fa-thumbs-o-up"></i> -->
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+    </el-row>
+</template>
+<script>
+export default {
+    created: function() {
+        this.getZixun()
+    },
+    data() {
+        return {
+            zixunData: [],
+            loading: false,
+            url : process.env.NODE_ENV == "production" ? this.WEB_ROOT+"/details-" : this.WEB_ROOT+'details-'        }
+    },
+    props: ['title', 'listRows', 'zxid', 'news'],
+    methods: {
+        getZixun() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news',
+                data: {
+                    listRows: this.listRows ? this.listRows : 4,
+                    tid: this.zxid
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.zixunData = response.data.data
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        }
+
+    },
+    computed: {}
+}
+</script>

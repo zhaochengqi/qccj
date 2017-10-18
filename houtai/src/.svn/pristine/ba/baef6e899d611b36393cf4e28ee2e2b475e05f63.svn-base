@@ -1,0 +1,221 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row>
+            <el-col :span="2">
+                <div class="img-Sur" @click="dianjiTouxiang">
+                    <img class="img-md" src="../../assets/img/profile-photos/1.png" alt="Profile Picture">
+                    <div class="xiugaiz img-md">修改头像</div>
+                </div>
+            </el-col>
+            <el-col :span="22">
+                <el-form :model="form" ref="form" :rules="rules" label-suffix='：'>
+                    <el-row :gutter="20">
+                        <el-col :md="12">
+                            <el-form-item label-width="100px" label="用户名">
+                                {{form.account}}
+                            </el-form-item>
+                        </el-col>
+                        <el-col :md="12">
+                            <el-form-item label-width="100px" label="姓名">
+                                {{form.nickname}}
+                            </el-form-item>
+                        </el-col>
+                        <el-col :md="12">
+                            <el-form-item label-width="100px" label="手机" prop="phone">
+                                <el-input v-model="form.phone" placeholder="请填写手机号"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :md="12">
+                            <el-form-item label-width="100px" label="邮箱" required prop="email">
+                                <el-input v-model="form.email" placeholder="请填写邮箱"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-form-item label-width="100px">
+                        <el-button type="primary" size="large" @click="onSubmit">确定保存</el-button>
+                    </el-form-item>
+                </el-form>
+            </el-col>
+        </el-row>
+        <gaiInfoImg :dialogVisibles="dialogVisibles" @Cb-ImgDialog="Cb_ImgDialog"></gaiInfoImg>
+    </el-card>
+</template>
+<script type="text/javascript">
+var zz = /^[a-zA-Z0-9]{6,20}$/;
+var zzEmail = /^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$/;
+//返回上一页共用组件
+import goBack from '@/components/goBack'
+import gaiInfoImg from './gaiInfoImg'
+export default {
+    activated() {
+            this.form = this.userinfo
+        },
+        data() {
+            return {
+                dialogVisibles: false,
+                form: {},
+                loading: false,
+                url: '',
+                formLabelWidth: '120px',
+                rules: {
+                    email: [{
+                        validator: (rule, value, callback) => {
+                            if (value === '') {
+                                callback(new Error('请输入邮箱！'));
+                            } else {
+                                if (!zzEmail.test(value)) {
+                                    callback(new Error('请输入格式正确邮箱！'));
+                                }
+                                callback();
+                            }
+                        },
+                        trigger: 'blur'
+                    }]
+                },
+            }
+        },
+        methods: {
+            //点击头像
+            dianjiTouxiang() {
+                this.dialogVisibles = true;
+            },
+            //确定
+            onSubmit() {
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        this.setData()
+                    } else {
+                        return false
+                    }
+                })
+            },
+            closeDialog() {
+                this.form = {
+                    group_id: [],
+                    account: "",
+                    name: "",
+                    password: "",
+                    qrpassword: "",
+                    phone: '',
+                    email: ''
+                };
+                this.$emit('CB-dialogFormVisible');
+            },
+            //插入数据
+            setData() {
+                this.form.group_id = this.form.group_id.join(",")
+                this.axios({
+                    method: 'post',
+                    url: this.url,
+                    data: this.form,
+                    headers: this.$store.getters.Request_Head
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.form.group_id = this.setArray(this.form.group_id);
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.$message.success('数据保存成功');
+                    }
+                }, (error) => {
+                    this.form.group_id = this.setArray(this.form.group_id);
+                    this.$emit('API-ERR')
+                })
+            },
+            //重置返回INT值得数组
+            setArray(val) {
+                val = val.split(",");
+                for (var i = 0; i < val.length; i++) {
+                    val[i] = parseInt(val[i])
+                }
+                return val
+            },
+            //获取数据
+            getData() {
+                this.axios({
+                    method: 'post',
+                    url: this.API_ROOT + '/api/user/read',
+                    data: {
+                        id: this.id
+                    },
+                    headers: this.$store.getters.Request_Head
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.form.group_id = []
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.form = response.data.data
+                        this.form.qrpassword = this.form.password
+                        this.form.group_id = this.form.group_id.split(",")
+                        for (var i in this.form.group_id) {
+                            this.form.group_id[i] = Number(this.form.group_id[i])
+                        }
+                    }
+                }, (error) => {
+                    this.form.group_id = []
+                    this.$emit('API-ERR')
+                })
+            },
+            //关闭组件
+            Cb_ImgDialog() {
+                this.dialogVisibles = false
+            }
+        },
+        computed: {
+            rules_juesezu: function() {
+                return this.$store.state.rules_juesezu
+            },
+            //读取登录用户信息
+            userinfo: function() {
+                return this.$store.state.userinfo.userinfo
+            },
+        },
+        //注意别忘记挂载组件
+        components: {
+            goBack,
+            gaiInfoImg
+        }
+}
+</script>
+<style>
+.img-Sur {
+    cursor: pointer;
+    position: relative;
+}
+
+.xiugaiz {
+    position: absolute;
+    display: none;
+    text-align: center;
+    top: 55px;
+    background: white;
+    opacity: 0.7;
+}
+
+.img-Sur:hover .xiugaiz {
+    display: block;
+    color: black;
+}
+
+.img-Sur:hover img {
+    border: 1px solid #B2B1B1;
+    padding: 3px;
+}
+
+.img-Sur>img {
+    width: 70px;
+    height: 70px;
+    background: #E5E5E5;
+    padding: 4px;
+}
+
+.img-Sur>div {
+    width: 70px;
+}
+</style>

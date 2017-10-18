@@ -1,0 +1,54 @@
+<template>
+    <el-row v-if="linkData.length>0">
+        <div class="index-title margin-bottom-40 padding-top-10 index-title-zhiku">
+            <p class=""></p>
+            <span class="font-150">智库</span>
+            <router-link :to="{name: 'daoshi'}" style="border:0" class="pull-right">
+                <i class="el-icon-d-arrow-right"></i>
+            </router-link>
+        </div>
+        <el-row :gutter="18" class="margin-bottom-30 padding-bottom-30">
+            <el-col :xs="12" :sm="6" :md="6" class="zhiku-box" v-for="item in linkData" :key="item.id" target="_Blank">
+                <div class="zhiku-menu">
+                    <img v-if="!item.img" src="../../assets/img/default.jpg" alt="">
+                    <img v-else :src="item.img+'!143x130'" alt="">
+                    <router-link :to="{name: 'zuozhe_geren',params:{id:item.id}}">
+                        <span class="font-130">{{item.name}}</span>
+                    </router-link>
+                </div>
+            </el-col>
+        </el-row>
+    </el-row>
+</template>
+<script>
+export default {
+    activated: function() {
+        this.getData()
+    },
+    data() {
+        return {
+            linkData: []
+        }
+    },
+    methods: {
+        getData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news',
+                data: {
+                    listRows: 10,
+                    size: 1
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.linkData = response.data.data
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        }
+    }
+}
+</script>

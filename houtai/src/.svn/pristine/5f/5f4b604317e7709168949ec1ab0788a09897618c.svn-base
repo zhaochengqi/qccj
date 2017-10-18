@@ -1,0 +1,249 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="7" class="pad-rgt">
+                    <el-input placeholder="检索：项目、单位、校内指导老师" icon="search" v-model="keys" clearable>
+                    </el-input>
+                </el-col>
+                <el-col :md="6" class="pad-rgt">
+                    <el-select v-model="kequn" placeholder="不限专业课群" clearable @change="selectKequn" style="width:100%">
+                        <el-option v-for="keq in kequn_dt" :label="keq.title" :value="keq.id" :key="keq.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="11" :sm="6" class="text-right">
+                    <el-button-group>
+                        <el-button type="primary" icon="plus" @click="addProject">添加项目</el-button>
+                        <el-button type="danger" icon="delete" @click="piliangDeleted">批量删除</el-button>
+                    </el-button-group>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe border highlight-current-row style="width: 100%" @selection-change="handleSelectionChange">
+                <el-table-column type="selection" width="50"></el-table-column>
+                <el-table-column prop="img" width="80" label="图片" fixed>
+                    <template scope="scope">
+                        <img :src="scope.row.img">
+                    </template>
+                </el-table-column>
+                <el-table-column prop="name" min-width="100" label="姓名" fixed show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column prop="ename" width="100" min-width="100" label="英文名" show-overflow-tooltip></el-table-column>
+                <el-table-column min-width="150" prop="zhiwei" label="职位"></el-table-column>
+                <el-table-column min-width="100" label="人物类型" prop="cid">
+                    <template scope="scope">
+                        {{zhikulx(cid)}}
+                    </template>
+                </el-table-column>
+                <el-table-column min-width="150" prop="jianshu" label="人物简述"></el-table-column>
+                <el-table-column width="160" label="操作" fixed="right" align="center">
+                    <template scope="scope">
+                        <el-button size="mini" icon="edit" type='primary' @click="handleEdit(scope.row.id)">
+                            编辑
+                        </el-button>
+                        <el-button size="mini" icon="delete2" type='danger' @click="handleDelete(scope.row.id)">
+                            删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total,sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+    </el-card>
+</template>
+<script>
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+export default {
+    //切换keep时，触发该方法
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: '',
+            kequn: '',
+            SearchMoreForm: false,
+            tableData: [],
+            pid: '',
+            multipleSelection: [],
+            dialogFormVisible: false,
+            id: '',
+            dialogVisible: false,
+            title: ''
+        }
+    },
+    watch: {
+        //监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'keys': function(newValue, oldValue) {
+            if (newValue == oldValue) return;
+            this.keys = newValue;
+            this.getData()
+        }
+    },
+    methods: {
+        //查看已经申请的学生数据
+        stuChaKan(id, title) {
+            this.dialogFormVisible = true;
+            this.id = id;
+            this.title = title;
+        },
+        //跳转至添加或编辑项目页面
+        addProject(id) {
+            this.$router.push({
+                name: 'addProject'
+            })
+        },
+        //跳编辑页面
+        handleEdit(id) {
+            this.$router.push({
+                name: 'editProject',
+                params: {
+                    id: id
+                }
+            })
+        },
+        //根据课群检索项目信息
+        selectKequn(val) {
+            this.kequn = val;
+            this.getData()
+        },
+        //多选
+        handleSelectionChange(val) {
+            this.multipleSelection = val
+        },
+        //删除数据记录
+        handleDelete(id) {
+            this.$confirm('是否确认删除？删除后将不可恢复!', '系统提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then((response) => {
+                this.pid = id;
+                this.deleteData();
+            }).catch(() => {
+
+            })
+        },
+        //批量删除
+        piliangDeleted() {
+            if (this.multipleSelection.length == 0) {
+                this.$message({
+                    type: 'warning',
+                    message: '请选择需要删除的内容'
+                })
+                return
+            }
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                for (var i in this.multipleSelection) {
+                    this.multipleSelection[i] = this.multipleSelection[i].id
+                }
+                this.pid = this.multipleSelection.join(',')
+                this.deleteData()
+            }).catch(() => {
+
+            });
+        },
+        handledel() {
+            this.$message.success('删除成功');
+        },
+        //显示页条数
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        //监听当前页数
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        //获取主数据
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/zhiku',
+                data: {
+                    keys: this.keys,
+                    page: this.currentPage,
+                    listRows: this._pageSize
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+        deleteData() {
+            this.loading = true
+            this.$http.post(this.API_ROOT + '/api/projects/delete', {
+                id: this.pid
+            }, this.$store.getters.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.handledel()
+                    this.getData();
+                    this.multipleSelection = []
+                }
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+        CB_dialogFormVisible(val) {
+            if (val == 1) {
+                this.getData()
+            }
+            this.dialogFormVisible = false;
+        },
+        zhikulx(value) {
+            for (var i in this.zkleixing) {
+                if (value == this.zkleixing[i].id) {
+                    return this.zkleixing[i].title
+                }
+            }
+        }
+    },
+    computed: mapState({
+        _pageSize: state => state.pageSize,
+        _pageSizes: state => state.pageSizes,
+        kequn_dt: state => state.kequnfangxiang,
+        projects_data: state => state.projects_data,
+        zkleixing: state => state.zkleixing
+    })
+}
+</script>
+<style>
+.daochu_xiangmu {
+    height: 36.5px;
+}
+
+.stuNumChaKan {
+    cursor: pointer;
+}
+</style>

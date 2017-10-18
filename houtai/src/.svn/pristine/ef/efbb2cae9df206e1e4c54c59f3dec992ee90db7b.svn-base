@@ -1,0 +1,258 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="6">
+                    <el-input placeholder="检索：课号、课程名称" icon="search" v-model="keys" clearable>
+                    </el-input>
+                </el-col>
+                <el-col :md="18" class="text-right pad-left">
+                    <el-button-group>
+                        <el-button type="danger" icon="arrow-left" @click="goBack">返回</el-button>
+                        <el-button type="warning" id="search" icon="arrow-down" @click="SearchMore()"></el-button>
+                    </el-button-group>
+                </el-col>
+            </el-row>
+            <el-row class="pad-top" :class="{hidden:isHidden}">
+                <el-col :md="5" class="pad-rgt">
+                    <el-select v-model="xueqi" placeholder="不限学期" clearable @change="selectXueqi" style="width:100%">
+                        <el-option v-for="xq in xueqi_data" :label="xq.title" :value="xq.id" :key="xq.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="5" class="pad-rgt">
+                    <el-select v-model="kc_type" placeholder="不限课程类别" clearable @change="selectKecheng" style="width:100%">
+                        <el-option v-for="kc in kc_type_data" :label="kc.title" :value="kc.id" :key="kc.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="5" class="pad-rgt" v-if="kc_type!='8'">
+                    <el-select v-model="is_xiu" placeholder="不限课程属性" clearable @change="selectXiuke" style="width:100%">
+                        <el-option v-for="xk in kc_typedata" :label="xk.title" :value="xk.id" :key="xk.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <div class="alert alert-info font-110">
+                培养计划：<strong>{{year}}级</strong>，专业课群：<strong>{{zykq(kequn)}}</strong>，
+                <span v-html="count"></span>
+            </div>
+            <el-table :data="tableData" stripe highlight-current-row border style="width: 100%" @sort-change="handleSort">
+                <el-table-column type="index" width="50"></el-table-column>
+                <el-table-column prop="xueqi " label="学期" width="100" sortable="custom">
+                    <template scope="scope">
+                        {{kcxueqi(scope.row.xueqi)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="kcname" label="课程名称" min-width="200"></el-table-column>
+                <el-table-column prop="kchao" label="课号" width="100"></el-table-column>
+                <el-table-column prop="kc_type" label="课程类别" min-width="130">
+                    <template scope="scope">
+                        <span v-if="scope.row.kc_type=='2'||scope.row.kc_type=='3'">公共基础课</span>
+                        <span v-if="scope.row.kc_type=='5'||scope.row.kc_type=='4'">专业基础课</span>
+                        <span v-if="scope.row.kc_type=='7'||scope.row.kc_type=='6'">专业课</span>
+                        <span v-if="scope.row.kc_type=='8'">实践环节</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="课程属性" width="100">
+                    <template scope="scope">
+                        {{kctypedata(scope.row.is_xiu)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="xuefen" label="学分" width="100"></el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next, jumper" :total="total">
+            </el-pagination>
+        </div>
+    </el-card>
+</template>
+<script>
+export default {
+    activated: function() {
+        this._order = "xueqi"
+        this._sort = "desc"
+        this.year = this.$route.params.year
+        this.kequn = this.$route.params.kequn
+        this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            year: '',
+            kequn: '',
+            currentPage: 1,
+            keys: '',
+            tableData: [],
+            xueqi: '',
+            kc_type: '',
+            is_xiu: '',
+            count: '',
+            isHidden: true,
+        }
+    },
+    // 监听事件
+    watch: {
+        // 监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'keys': function(newValue, oldValue) {
+            if (newValue = oldValue) return
+            this.keys = newValue
+            this.getData()
+        }
+    },
+    methods: {
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = "xueqi"
+                this._sort = "asc"
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData()
+        },
+        //当学期下拉菜单值发生改变时，回调此方法
+        selectXueqi(val) {
+            this.xueqi = val
+            this.getData()
+        },
+        //当课程类别下拉菜单值发生改变时，回调此方法
+        selectKecheng(val) {
+            this.kc_type = val
+            this.getData()
+        },
+        //当修课类型菜单值发生改变时，回调此方法
+        selectXiuke(val) {
+            this.is_xiu = val
+            this.getData()
+        },
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        getData() {
+            //跨域请求，注意此处的跨域接口主域名在config/index.js配置
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/pyjh',
+                data: {
+                    _order: this._order,
+                    _sort: this._sort,
+                    keys: this.keys,
+                    page: this.currentPage,
+                    listRows: this._pageSize,
+                    pyjh: this.year,
+                    kequn: this.kequn,
+                    xueqi: this.xueqi,
+                    kc_type: this.kc_type,
+                    is_xiu: this.is_xiu
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data;
+                    this.total = response.data.count;
+                    this.count = response.data.info.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            });
+        },
+        SearchMore() {
+            //显示/隐藏更多检索条件
+            if (this.isHidden) {
+                this.isHidden = false;
+                $('#search').html('<i class="el-icon-arrow-up"></i>')
+            } else {
+                this.isHidden = true;
+                $('#search').html('<i class="el-icon-arrow-down"></i>')
+            }
+        },
+        //专业课群
+        zykq: function(val) {
+            var value;
+            for (var i in this.kequn_data) {
+                if (this.kequn_data[i].id == val) {
+                    return value = this.kequn_data[i].title;
+                }
+            }
+        },
+        //学期过滤
+        kcxueqi: function(val) {
+            var value;
+            for (var i in this.xueqi_data) {
+                if (this.xueqi_data[i].id == val) {
+                    return value = this.xueqi_data[i].title;
+                }
+            }
+        },
+        //课程类别过滤
+        kctype: function(val) {
+            var value;
+            for (var i in this.kc_type_data) {
+                if (this.kc_type_data[i].id == val) {
+                    return value = this.kc_type_data[i].title;
+                }
+            }
+        },
+        //课程属性
+        kctypedata: function(val) {
+            var value;
+            for (var i in this.kc_typedata) {
+                if (this.kc_typedata[i].id == val) {
+                    return value = this.kc_typedata[i].title;
+                }
+            }
+        },
+        //返回上一页
+        goBack() {
+            this.year = ''
+            this.kequn = ''
+            this.$router.go(-1)
+        }
+    },
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        },
+        //专业课群
+        kequn_data: function() {
+            return this.$store.state.kequnfangxiang
+        },
+        //课程类别
+        kc_type_data: function() {
+            return this.$store.state.kechengType
+        },
+        //学期下拉菜单
+        xueqi_data: function() {
+            return this.$store.state.xueqiList
+        },
+        //课程属性（列表）
+        kc_typedata: function() {
+            return this.$store.state.kechengliebie
+        }
+    }
+}
+</script>

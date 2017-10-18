@@ -1,0 +1,150 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row :gutter="15">
+                <el-col :md="6">
+                    <el-input placeholder="检索：学生学号、姓名 " icon="search" v-model="keys">
+                    </el-input>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe highlight-current-row border style="width: 100%" @sort-change="handleSort">
+                <el-table-column type="index" width="50"></el-table-column>
+                <el-table-column min-width="80" prop="xm" label="姓名"></el-table-column>
+                <el-table-column min-width="80" prop="xh" label="学号" sortable="custom"></el-table-column>
+                <el-table-column min-width="150" prop="kequn_title" label="专业课群" show-overflow-tooltip></el-table-column>
+                <el-table-column min-width="80" prop="shouji" label="手机"></el-table-column>
+                <el-table-column min-width="80" prop="emil" label="邮箱"></el-table-column>
+                <el-table-column label="加分记录" min-width="90">
+                    <template scope="scope">
+                        <el-button type="text" @click="jiafenJlu(scope.row)">查看</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next , jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+        <!-- 查看加分项 -->
+        <jfshengheRead :dialogFormVisible='dialogFormVisible' :id="id" @CB-dialogFormVisible="CB_dialogFormVisible"></jfshengheRead>
+    </el-card>
+</template>
+<script>
+import jfshengheRead from '@/page/shenhe/jfshenhe_read';
+export default {
+    activated: function() {
+        this._order = "xh"
+        this._sort = "asc"
+            // this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: '',
+            tableData: [{
+                id: 0,
+                xm: '法比欧',
+                xh: '1556145',
+                kequn_title: '土木工程 - 建筑工程课群组',
+                shouji: 15696264658,
+                emil: '15674832@qq.com'
+            }],
+            FromLabelWidth: "100px",
+            _order: '',
+            _sort: '',
+            type: '',
+            dialogFormVisible: false,
+            id: -1,
+        }
+
+    },
+    // 监听事件
+    watch: {
+        // 监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'keys': function(newValue, oldValue) {
+            this.keys = newValue;
+            this.getData();
+        },
+    },
+    methods: {
+        //查看加分记录
+        jiafenJlu(value) {
+            this.dialogFormVisible = true;
+            this.id = value.id;
+        },
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = "xh"
+                this._sort = "asc"
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData()
+        },
+        //当页码发生改变
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        //当一页显示多少条发生改变
+        handleSizeChange(val) {
+            this.$store.commit("setPageSize", val);
+            this.getData();
+        },
+        getData() {
+            this.loading = true
+                //有的字段有问题
+                // 跨域请求，注意此处的跨域接口主域名在config/index.js配置
+            this.$http.post(this.API_ROOT + '/api/chengji', {
+                _order: this._order,
+                _sort: this._sort,
+                //第几页
+                page: this.currentPage,
+                //显示几条
+                listRows: this._pageSize,
+                //检索
+                keys: this.keys,
+            }, this.$store.getters.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.tableData = response.data.data;
+                    this.total = response.data.count;
+                };
+                this.loading = false
+            }, (error) => {
+                this.$emit('API_ERR');
+                this.loading = false
+            });
+        },
+        //查看加分项
+        CB_dialogFormVisible() {
+            this.dialogFormVisible = false;
+        }
+    },
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        },
+    },
+    components: {
+        jfshengheRead
+    }
+}
+</script>

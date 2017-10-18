@@ -1,0 +1,107 @@
+<template>
+     <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div v-bind:style="{ 'min-height': _PageHeight+80+'px'}" class="margin-top-50">
+            <el-form ref="form" :model="form">
+                <el-form-item >
+                    <vueEditor :editContent="form.content" style="height: 400px;"  @Callback-Content="CB_Content">
+                    </vueEditor>
+                </el-form-item> 
+                <el-form-item>
+                    <el-button type="primary"  size="large"   @click="onSubmit">确认保存</el-button>
+                </el-form-item> 
+            </el-form>
+        </div>
+    </el-card>
+</template>
+<script>
+//导入vuex辅助函数
+import vueEditor from '@/components/editor'
+import {
+    mapState
+} from 'vuex'
+
+export default{
+    activated:function(){
+         switch(this.$route.name){
+                case 'gywomen': this.form.id=1; break;
+                case 'lxwomen': this.form.id=2 ; break;
+                case 'xinwenbao': this.form.id=3 ; break;
+                case 'jrwomen': this.form.id=4 ; break;
+            }
+            this.getData()
+    },
+    data(){
+        return{
+            title:'',
+            loading:false,
+            form:{
+                content:'',
+                id:''
+            }
+        }
+    },
+    watch:{
+        '$route.name':function(newValue,oldValue){
+            switch(newValue){
+                case 'gywomen': this.form.id=1 ; break;
+                case 'lxwomen': this.form.id=2 ; break;
+                case 'xinwenbao': this.form.id=3 ; break;
+                case 'jrwomen': this.form.id=4 ; break;
+            }
+            this.getData()
+        },
+    },
+    methods:{
+        //详细内容
+        CB_Content(content, token) {
+            this.form.content=content
+        },
+        //提交数据
+        onSubmit() {
+            var url
+            url = this.API_ROOT + '/api/about/update';
+            this.axios({
+                method: 'post',
+                url: url,
+                data:this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$message.success('数据保存成功');
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+        getData() {
+            //请求数据
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/about/read',
+                data: {
+                    id:this.form.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+
+        },
+    },
+    //注意别忘记挂载组件
+    components: {
+        vueEditor,
+    }
+}
+</script>

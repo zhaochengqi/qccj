@@ -1,0 +1,128 @@
+<template>
+    <div>
+        <!-- 七牛上传组件 -->
+        <!-- 拖动上传 -->
+        <div :id="container?container:'SelectContainer'" v-if="!type || type == 'default'">
+            <el-button :size="button_size?button_size:'small'" type="primary" :id="buttonID?buttonID:'qn_upload_button'">{{button_text?button_text:'上传文件'}}</el-button>
+        </div>
+        <!-- 拖动上传 -->
+        <div :id="container?container:'SelectContainer'" v-if="type == 'drag'">
+            <div :id="buttonID?buttonID:'qn_upload_button'" class="el-upload el-upload--text">
+                <div class="el-upload-dragger"><i class="el-icon-upload"></i>
+                    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                </div>
+            </div>
+        </div>
+        <!-- 头像方式 -->
+        <div class="avatar-uploader" :id="container?container:'SelectContainer'" v-if="type == 'photo'">
+            <div :id="buttonID?buttonID:'qn_upload_button'" class="el-upload el-upload--text">
+                <i class="el-icon-upload avatar-uploader-icon"></i>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+import Vue from 'vue'
+
+export default {
+    //外部调用该组件时，允许接收的参数
+    props: ['type', 'buttonID', 'domain', 'max_file_size', 'dragdrop', 'container', 'drop_element', 'chunk_size', 'button_text', 'button_size', 'filters'],
+
+    data: function() {
+        return {
+            filter: {}
+        }
+    },
+    methods: {},
+    mounted() {
+        //重新定义this ，避免冲突
+        var _self = this
+        Qiniu.uploader({
+            runtimes: 'html5,flash,html4', // 上传模式，依次退化
+            browse_button: this.buttonID ? this.buttonID : 'qn_upload_button', // 上传选择的点选按钮，必需
+
+            uptoken_url: this.API_ROOT + '/api/qiniu/getqiniutoken', // Ajax请求uptoken的Url，强烈建议设置（服务端提供）
+            // uptoken: '', // uptoken 是上传凭证，由其他程序生成
+            get_new_uptoken: false, // 设置上传文件的时候是否每次都重新获取新的uptoken
+            // downtoken_url: '/downtoken',
+            // Ajax请求downToken的Url，私有空间时使用，JS-SDK将向该地址POST文件的key和domain，服务端返回的JSON必须包含url字段，url值为该文件的下载地址
+            unique_names: true, // 默认false，key为文件名。若开启该选项，JS-SDK会为每个文件自动生成key（文件名）
+            // save_key: true, // 默认false。若在服务端生成uptoken的上传策略中指定了save_key，则开启，SDK在前端将不对key进行任何处理
+            domain: this.domain ? this.domain : this.qn_domain, // bucket域名，下载资源时用到，必需
+            container: this.container ? this.container : 'SelectContainer', // 上传区域DOM ID，默认是browser_button的父元素
+            max_file_size: this.max_file_size ? this.max_file_size : '100mb', // 最大文件体积限制
+            flash_swf_url: '../plupload/Moxie.swf', //引入flash，相对路径
+            max_retries: 3, // 上传失败最大重试次数
+            dragdrop: this.dragdrop ? true : false, // 开启可拖曳上传
+            drop_element: this.drop_element ? this.drop_element : 'SelectContainer', // 拖曳上传区域元素的ID，拖曳文件或文件夹后可触发上传
+            chunk_size: this.chunk_size ? this.chunk_size : '4mb', // 分块上传时，每块的体积
+            auto_start: true, // 选择文件后自动上传，若关闭需要自己绑定事件触发上传
+            filters: this.filters ? this.filters : this.filter,
+            //x_vars : {
+            //    查看自定义变量
+            //    'time' : function(up,file) {
+            //        var time = (new Date()).getTime();
+            // do something with 'time'
+            //        return time;
+            //    },
+            //    'size' : function(up,file) {
+            //        var size = file.size;
+            // do something with 'size'
+            //        return size;
+            //    }
+            //},
+            init: {
+
+                'FilesAdded': function(up, files) {
+                    plupload.each(files, function(file) {
+                        // 文件添加进队列后，处理相关的事情
+                        // console.log(file)
+                        _self.$emit("Callback-FilesAdded", file);
+                    });
+                },
+                'BeforeUpload': function(up, file) {
+                    // 每个文件上传前，处理相关的事情
+                    // console.log(up, file)
+                    // 文件上传之前进行回调数据到父组件
+                    _self.$emit("Callback-BeforeUpload", file);
+                },
+                'UploadProgress': function(up, file) {
+                    // 每个文件上传时，处理相关的事情
+                    // console.log(file)
+                    _self.$emit("Callback-UploadProgress", file);
+
+                },
+                'FileUploaded': function(up, file, info) {
+                    //返回上传成功后的文件路径
+                    var domain = up.getOption('domain')
+                    var file_key = eval("(" + info + ")").key
+
+                    //上传成功后，完整的文件路径
+                    var file_url = domain + file_key + '!255x170'
+
+                    // console.log(file_url)
+                    _self.$emit("Callback-GetFileUrl", file_url);
+
+                },
+                'Error': function(up, err, errTip) {
+                    //上传出错时，处理相关的事情
+                    // console.log(err, errTip)
+                    _self.$emit("Callback-Error", err, errTip);
+
+                },
+                'UploadComplete': function(upload) {
+                    //队列文件处理完毕后，处理相关的事情
+                    // console.log(upload)
+                },
+                'Key': function(up, file) {
+                    // 若想在前端对每个文件的key进行个性化处理，可以配置该函数
+                    // 该配置必须要在unique_names: false，save_key: false时才生效
+                    var key = "";
+                    // do something with key here
+                    return key
+                }
+            }
+        })
+    }
+}
+</script>

@@ -1,0 +1,142 @@
+<template>
+    <div>
+        <div id="bg-overlay" :class="{'bg-img':bgImgStatus}" :style="{'background-image':'url('+bgImgUrl+')'}"></div>
+        <!-- LOGIN FORM -->
+        <!--===================================================-->
+        <div class="cls-content">
+            <div class="cls-content-sm panel">
+                <div class="panel-body text-center">
+                    <div class="mar-ver pad-btm">
+                        <h3 class="h3 mar-no">{{userinfo.account}}</h3>
+                        <p class="text-muted margin-top-10">{{userinfo.nickname}}</p>
+                    </div>
+                    <div class="pad-btm mar-btm">
+                        <img alt="Profile Picture" class="img-lg img-circle img-border-light" :src="userinfo.head">
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <input type="password" class="form-control input-lg" v-model='password' placeholder="请输入您的登录密码，进行解锁！" @keyup.enter="submitForm">
+                        </div>
+                        <div class="form-group text-right">
+                            <a class="btn btn-block btn-success" @click="submitForm">登录系统</a>
+                        </div>
+                    </div>
+                    <el-row>
+                        <el-col :span="24" class="text-right">
+                            <el-button type="text" size="small" @click="login"><i class="ti-unlock"></i> 切换其他账号登录系统</el-button>
+                        </el-col>
+                    </el-row>
+                </div>
+            </div>
+        </div>
+        <!--===================================================-->
+        <!-- DEMO PURPOSE ONLY -->
+        <!--===================================================-->
+        <div class="demo-bg text-center">
+            <div id="demo-bg-list">
+                <div class="demo-loading"><i class="psi-repeat-2"></i></div>
+                <img class="demo-chg-bg bg-trans" src="../../assets/img/bg-img/thumbs/bg-trns.jpg" @click="setBgImg(0)">
+                <img class="demo-chg-bg" src="../../assets/img/bg-img/thumbs/bg-img-1.jpg" @click="setBgImg(1)">
+                <img class="demo-chg-bg" src="../../assets/img/bg-img/thumbs/bg-img-2.jpg" @click="setBgImg(2)">
+                <img class="demo-chg-bg" src="../../assets/img/bg-img/thumbs/bg-img-3.jpg" @click="setBgImg(3)">
+                <img class="demo-chg-bg" src="../../assets/img/bg-img/thumbs/bg-img-4.jpg" @click="setBgImg(4)">
+                <img class="demo-chg-bg" src="../../assets/img/bg-img/thumbs/bg-img-5.jpg" @click="setBgImg(5)">
+                <img class="demo-chg-bg" src="../../assets/img/bg-img/thumbs/bg-img-6.jpg" @click="setBgImg(6)">
+                <img class="demo-chg-bg" src="../../assets/img/bg-img/thumbs/bg-img-7.jpg" @click="setBgImg(7)">
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+export default {
+    data: function() {
+        return {
+            password: ""
+        }
+    },
+    created: function() {
+        //设置当前页面标题名称
+        document.title = '锁定屏幕，请输入密码登录';
+        //如果有设置背景图片则显示
+        var bgUrl = this.$store.state.settings.bgImg;
+        if (bgUrl != 'none') {
+            this.bgImgStatus = true;
+            this.bgImgUrl = bgUrl;
+        }
+    },
+    methods: {
+        //设置登录页面背景图片
+        setBgImg(img_num) {
+            var $target = $('#bg-overlay');
+            if (img_num == 0) {
+                var url = 'none'
+            } else {
+                var url = 'static/img/bg-img/bg-img-' + img_num + '.jpg';
+            }
+            $target.css('background-image', 'url("' + url + '")').addClass('bg-img');
+            this.$store.commit('setBgImg', url);
+        },
+        submitForm(formData) {
+            //跨域请求，注意此处的跨域接口主域名在config/index.js配置
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/user/checkpwd',
+                data: {
+                    password: this.password
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((ret) => {
+                if (ret.data.status.code !== 1001) {
+                    this.$message.error(ret.data.data ? ret.data.data : ret.data.status.title);
+                } else {
+                    //更改锁定状态
+                    this.lock.status = false;
+                    this.$store.commit('setLock', this.lock)
+
+                    //更改最后操作时间
+                    let now_time = new Date().getTime() / 1000
+                    this.$store.commit('setLast_time', now_time)
+
+                    this.$router.push({
+                        path: this.lock.fullPath ? this.lock.fullPath : '/'
+                    });
+
+                    setTimeout(function() {
+                        window.location.reload()
+                    }, 10);
+
+                };
+            }, (error) => {
+                this.$notify.error({
+                    title: '操作提示！',
+                    message: '服务器请求失败！',
+                    duration: 3000
+                });
+            });
+        },
+        //切换到登录窗口
+        login() {
+            let json = {
+                userinfo: {},
+                rules: []
+            }
+            this.lock.status = false;
+            this.$store.commit('setLock', this.lock);
+            this.$store.commit('setUserinfo', json);
+            this.$store.commit('setSliderNav', []);
+            this.$router.push({
+                name: 'login'
+            })
+        },
+    },
+    computed: {
+        //读取登录用户信息
+        userinfo: function() {
+            return this.$store.state.userinfo.userinfo
+        },
+        lock: function() {
+            return this.$store.state.lock
+        }
+    }
+}
+</script>

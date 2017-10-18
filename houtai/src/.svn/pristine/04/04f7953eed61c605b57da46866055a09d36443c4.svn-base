@@ -1,0 +1,169 @@
+<template>
+    <div id="container" class="aside-float aside-bright" :class="pageClass" :style="pageStyle">
+        <SysHeader>
+            <!-- 公共头部通组件 -->
+        </SysHeader>
+        <!--END NAVBAR-->
+        <div class="boxed">
+            <!--CONTENT CONTAINER-->
+            <!--===================================================-->
+            <div id="content-container">
+                <div id="page-title">
+                    <h1 class="page-header text-overflow">{{pageName}}</h1>
+                    <!--Searchbox-->
+                    <div class="searchbox ">
+                        <el-breadcrumb class="pull-right" separator="/">
+                            <el-breadcrumb-item :to="{ name:'home' }"><i class="demo-pli-location-2"></i> 主页</el-breadcrumb-item>
+                            <el-breadcrumb-item :to="{name:nav.name}" v-if="nav.name != 'app'" v-for="nav in navArr" :key="nav.name">{{nav.meta.pagename}}</el-breadcrumb-item>
+                        </el-breadcrumb>
+                    </div>
+                </div>
+                <!--Page content-->
+                <!--===================================================-->
+                <div id="page-content">
+                    <keep-alive>
+                        <router-view @CB-juesezu="CB_juesezu" v-on:API-ERR="API_ERR_NOTIFY"></router-view>
+                    </keep-alive>
+                </div>
+                <!--===================================================-->
+                <!--End page content-->
+            </div>
+            <!--===================================================-->
+            <!--END CONTENT CONTAINER-->
+            <SysSliderNav>
+                <!-- 左侧导航 -->
+            </SysSliderNav>
+        </div>
+        <!-- FOOTER -->
+        <!--===================================================-->
+        <SysFooter>
+            <!-- 公共底部 -->
+        </SysFooter>
+        <!-- 返回顶部按钮 -->
+        <button class="scroll-top btn">
+            <i class="pci-chevron chevron-up"></i>
+        </button>
+        <SystemSet>
+            <!-- 系统功能设置 -->
+        </SystemSet>
+    </div>
+</template>
+<script>
+//导入框架构成公共组件
+import SysHeader from './Header.vue'
+import SysSliderNav from './SliderNav.vue'
+import SysFooter from './Footer.vue'
+import SystemSet from './SystemSet.vue'
+
+
+export default {
+    data: function() {
+        return {
+            navArr: [],
+            pageName: '',
+            pageClass: '',
+            pageStyle: ''
+        }
+    },
+    beforeCreate: function() {
+        //设置当前页面标题名称
+        document.title = this.pageName = this.$route.meta.pagename;
+
+    },
+    created: function() {
+        this.CB_juesezu()
+        this.$
+            //根据路由，生成面包屑导航数据
+        this.navArr = this.$route.matched;
+        //如果用户设置的皮肤，则读取
+        var settings = this.$store.state.settings;
+
+        if (settings.skin) {
+            $('#theme').attr('href', settings.skin)
+        }
+        //判断是否开启盒子布局
+        if (settings.layout.boxLayout.status) {
+            this.pageClass = this.pageClass + ' boxed-layout';
+            //判断是否显示盒子背景图片
+            if (settings.layout.boxLayout.bgimg) {
+                this.pageStyle = {
+                    'background-image': 'url(' + settings.layout.boxLayout.bgimg + ')',
+                    'background-repeat': 'no-repeat',
+                    'background-size': 'cover'
+                }
+            }
+
+        }
+
+        if (settings.layout.animate.status) {
+            this.pageClass = this.pageClass + ' effect'
+        }
+        var fixed = settings.layout.fixed
+        if (fixed.header) {
+            this.pageClass = this.pageClass + ' navbar-fixed'
+        }
+        if (fixed.footer) {
+            this.pageClass = this.pageClass + ' footer-fixed'
+        }
+        if (fixed.slider) {
+            this.pageClass = this.pageClass + ' mainnav-fixed'
+        }
+
+        if (settings.slider.menu) {
+            this.pageClass = this.pageClass + ' mainnav-sm'
+        } else {
+            this.pageClass = this.pageClass + ' mainnav-lg'
+        }
+    },
+    watch: {
+        '$route': function(to, from) {
+            this.navArr = this.$route.matched;
+            //监听路由，当路由发生改变时，变更当前页面名称
+            document.title = this.pageName = to.meta.pagename;
+        }
+    },
+    methods: {
+        CB_juesezu() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/authgroup',
+                data: {
+                    _order: 'update_time',
+                    _sort: 'asc'
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    if (response.data.status.code == 1004 || response.data.status.code !== 1006) {
+                        this.lockout()
+                    }
+                    this.loading = false
+                } else {
+                    this.$store.commit('setRulesJuesezu', response.data.data)
+                }
+            }, (error) => {
+                this.API_ERR_NOTIFY()
+            })
+        },
+        //监听回调接口请求失败后的方法
+        API_ERR_NOTIFY() {
+            this.$notify.error(this.$store.state.API_Err_Info);
+        }
+    },
+    components: {
+        SysHeader,
+        SysSliderNav,
+        SysFooter,
+        SystemSet
+    }
+
+}
+</script>
+<style>
+.el-table .cell,
+.el-table th>div {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+</style>

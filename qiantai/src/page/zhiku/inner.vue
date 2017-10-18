@@ -1,0 +1,91 @@
+<template>
+    <div v-loading="loading" element-loading-text="拼命加载中" v-if="zhuanlan.id!=-1">
+        <div class="index-title margin-bottom-40">
+            <span class="font-150">智库专栏</span>
+            <router-link :to="{name:'zhuanlan'}" style="border:0" class="pull-right">
+                <i class="el-icon-d-arrow-right"></i>
+            </router-link>
+        </div>
+        <el-row class="margin-bottom-30 padding-bottom-30 border-bottom">
+            <el-col class="margin-bottom-30">
+                <div class="zhuanti-img index-img-big zhuanti-img-first">
+                    <router-link :to="{name:'details',params:{id:zhuanlan.id}}">
+                        <img :src="zhuanlan.img?zhuanlan.img + '!369x197':'./static/img/default.jpg'" alt="">
+                    </router-link>
+                </div>
+            </el-col>
+            <el-col>
+                <div class="zhuanti-txt">
+                    <h4 class="font-140 no-margin">
+                        <router-link :to="{name:'details',params:{id:zhuanlan.id}}" >
+                            {{zhuanlan.title}}
+                        </router-link>
+                    </h4>
+                </div>
+            </el-col>
+        </el-row>
+        <el-row :gutter="7" class="margin-bottom-30 padding-bottom-30 border-bottom" v-for="item in zhikutextData" :key="item.id">
+            <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                <div class="zhuanti-img index-img-big">
+                    <router-link :to="{name:'details',params:{id:item.id}}">
+                        <img :src="item.img?item.img+ '!120x65':'./static/img/default.jpg'" alt="">
+                    </router-link>
+                </div>
+            </el-col>
+            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                <div class="zhuanti-txt">
+                    <h4 class="font-120 no-margin">
+                        <router-link :to="{name:'details',params:{id:item.id}}" >
+                            {{item.title}}
+                        </router-link>
+                    </h4>
+                </div>
+            </el-col>
+        </el-row>
+    </div>
+</template>
+<script>
+export default {
+    activated: function() {
+        this.getZhikutext()
+    },
+    data() {
+        return {
+            zhuanlan: {
+                id: -1
+            },
+            zhikutextData: [],
+            loading: false
+        }
+
+    },
+    methods: {
+        getZhikutext() {
+            this.loading = true;
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/index',
+                data: {
+                    tid: 4,
+                    listRows: 7
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    if (response.data.data.length > 0) {
+                        this.zhuanlan = response.data.data[0]
+                        this.zhikutextData = response.data.data
+                        this.zhikutextData.splice(0, 1)
+                    }
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        }
+    },
+    computed: {}
+}
+</script>

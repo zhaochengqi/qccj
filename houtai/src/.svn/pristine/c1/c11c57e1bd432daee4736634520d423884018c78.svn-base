@@ -1,0 +1,217 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row>
+            <el-col :span="2">
+                <div class="img-Sur" @click="dianjiTouxiang">
+                    <img class="img-md" :src="form.head" alt="Profile Picture">
+                    <div class="xiugaiz img-md">修改头像</div>
+                </div>
+            </el-col>
+            <el-col :span="22">
+                <el-form :model="form" ref="form" :rules="rules" label-suffix='：'>
+                    <el-row :gutter="20">
+                        <el-col :md="12">
+                            <el-form-item label-width="100px" label="用户名">
+                                {{form.account}}
+                            </el-form-item>
+                        </el-col>
+                        <el-col :md="12">
+                            <el-form-item label-width="100px" label="姓名">
+                                {{form.nickname}}
+                            </el-form-item>
+                        </el-col>
+                        <el-col :md="12">
+                            <el-form-item label-width="100px" label="手机" prop="phone">
+                                <el-input v-model="form.phone" placeholder="请填写手机号"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :md="12">
+                            <el-form-item label-width="100px" label="邮箱" required prop="email">
+                                <el-input v-model="form.email" placeholder="请填写邮箱"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-form-item label-width="100px">
+                        <el-button type="primary" size="large" :loading="loadingBiao" @click="onSubmit">确定保存</el-button>
+                    </el-form-item>
+                </el-form>
+            </el-col>
+        </el-row>
+        <gaiInfoImg :dialogVisibles="dialogVisibles" @Cb-ImgDialog="Cb_ImgDialog"></gaiInfoImg>
+    </el-card>
+</template>
+<script type="text/javascript">
+var zzEmail = /^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$/;
+//返回上一页共用组件
+import goBack from '@/components/goBack'
+import gaiInfoImg from './gaiInfoImg'
+export default {
+    activated() {
+            this.getData();
+        },
+        data() {
+            return {
+                dialogVisibles: false,
+                loadingBiao: false,
+                loading: false,
+                formLabelWidth: '120px',
+                rules: {
+                    email: [{
+                        validator: (rule, value, callback) => {
+                            if (value === '') {
+                                callback(new Error('请输入邮箱！'));
+                            } else {
+                                if (!zzEmail.test(value)) {
+                                    callback(new Error('请输入格式正确邮箱！'));
+                                }
+                                callback();
+                            }
+                        },
+                        trigger: 'blur'
+                    }]
+                },
+                form: {
+                    head: '',
+                    account: '',
+                    nickname: '',
+                    phone: '',
+                    email: ''
+                }
+            }
+        },
+        methods: {
+            //点击头像
+            dianjiTouxiang() {
+                this.dialogVisibles = true;
+            },
+            //确定
+            onSubmit() {
+                this.loadingBiao = true;
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        if (this.form.phone != '') {
+                            if (/^1[34578]{1}\d{9}$/.test(this.form.phone)) {
+                                this.setData()
+                            } else {
+                                this.loadingBiao = false;
+                                this.$message.warning('请填写正确的手机号码');
+                            }
+                        } else {
+                            this.setData()
+                        }
+                    } else {
+                        return false
+                    }
+                })
+            },
+            //插入数据
+            setData() {
+                this.axios({
+                    method: 'post',
+                    url: this.API_ROOT + '/api/user/update',
+                    data: this.form,
+                    headers: this.$store.getters.Request_Head
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.$message.success('数据保存成功');
+                        this.getData();
+                    }
+                    this.loadingBiao = false;
+                }, (error) => {
+                    this.loadingBiao = false;
+                    this.$emit('API-ERR')
+                })
+            },
+            //获取数据
+            getData() {
+                this.axios({
+                    method: 'post',
+                    url: this.API_ROOT + '/api/user/read',
+                    data: {
+                        id: this.userinfo.userinfo.id
+                    },
+                    headers: this.$store.getters.Request_Head
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.form.group_id = []
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.form = response.data.data;
+                        //数据保存成功后再存入数据仓库
+                        this.userinfo.userinfo.head = response.data.data.head;
+                        this.userinfo.userinfo.email = response.data.data.email;
+                        this.userinfo.userinfo.phone = response.data.data.phone;
+                        this.$store.commit('setUserinfo', this.userinfo);
+                        delete this.form.group_id;
+                    }
+                }, (error) => {
+                    this.form.group_id = []
+                    this.$emit('API-ERR')
+                })
+            },
+            //关闭组件
+            Cb_ImgDialog(val) {
+                this.dialogVisibles = false
+                this.form.head = val
+            }
+        },
+        computed: {
+            rules_juesezu: function() {
+                return this.$store.state.rules_juesezu
+            },
+            //读取登录用户信息
+            userinfo: function() {
+                return this.$store.state.userinfo
+            },
+        },
+        //注意别忘记挂载组件
+        components: {
+            goBack,
+            gaiInfoImg
+        }
+}
+</script>
+<style>
+.img-Sur {
+    cursor: pointer;
+    position: relative;
+}
+
+.xiugaiz {
+    position: absolute;
+    display: none;
+    text-align: center;
+    top: 55px;
+    background: white;
+    opacity: 0.7;
+}
+
+.img-Sur:hover .xiugaiz {
+    display: block;
+    color: black;
+}
+
+.img-Sur:hover img {
+    box-shadow: 0px 0px 3px #1D8CE0;
+}
+
+.img-Sur>img {
+    width: 70px;
+    height: 70px;
+    background: #E5E5E5;
+    padding: 4px;
+}
+
+.img-Sur>div {
+    width: 70px;
+}
+</style>

@@ -1,0 +1,50 @@
+<template>
+    <div>
+        <el-input :placeholder="placeholder" icon="search" v-model="key" clearable>
+        </el-input>
+    </div>
+</template>
+<script type="text/javascript">
+//同步搜索函数
+var jishu = 0;
+const tongbu = function(shijian, yc, yanchi, cb) {
+    jishu = 1;
+    shijian += 1000;
+    yc -= shijian;
+    if (yc < 0)
+        yc = 0;
+    console.log(yc)
+    setTimeout(function() {
+        if (shijian >= yanchi) {
+            jishu = 0
+            cb();
+        } else {
+            tongbu(shijian, yc, yanchi, cb);
+        }
+    }, yc);
+};
+
+export default {
+    props: ['placeholder'],
+    data: function() {
+        return {
+            key: ''
+        }
+    },
+    watch: {
+        // 监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'key': function(newValue, oldValue) {
+            //初始时间和延迟时间
+            let shijian = 0,
+                yanchi = 2000;
+            if (!jishu)
+                tongbu(shijian, yanchi, yanchi, this.cb);
+        }
+    },
+    methods: {
+        cb() {
+            this.$emit('CB-awaitSosuo', this.key)
+        }
+    }
+}
+</script>

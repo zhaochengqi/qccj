@@ -1,0 +1,56 @@
+// The Vue build version to load with the `import` command
+// (runtime-only or standalone) has been set in webpack.base.conf with an alias.
+import Vue from 'vue'
+import App from './App'
+import router from './router/index.js'
+
+
+//数据资源请求
+import axios from 'axios'
+import VueAxios from 'vue-axios'
+
+Vue.prototype.LS = require('storejs')
+
+import store from './store.js'
+
+Vue.use(VueAxios, axios)
+
+Vue.prototype.API_ROOT = process.env.API_ROOT
+
+Vue.prototype.TMPT_ROOT = process.env.TMPT_ROOT
+
+Vue.prototype.WEB_ROOT = process.env.WEB_ROOT
+
+Vue.prototype._PageHeight = document.documentElement.clientHeight - 330
+Vue.prototype.layout = false
+Vue.config.productionTip = false
+
+//节点验证
+Vue.prototype.authCheck = function(id) {
+    var juese = store.state.userinfo.userinfo
+    if (juese.account == 'admin') {
+        return true;
+    }
+    //获取角色拥有的所有节点
+    var arr = store.state.userinfo.rules;
+    if (arr) {
+        if (arr.indexOf(id) === -1) {
+            //没有权限
+            return false;
+        } else {
+            //拥有权限
+            return true;
+        }
+    } else {
+        return false;
+    }
+}
+
+/* eslint-disable no-new */
+new Vue({
+    el: '#app',
+    router,
+    store,
+    template: '<App/>',
+    components: { App }
+})

@@ -1,0 +1,422 @@
+<template>
+    <div class="header">
+        <header id="navbar" class="pc-header">
+            <div class="container">
+                <el-row type="flex" class="row-bg">
+                    <el-col :span="4">
+                        <div class="logo" @click='handleSelect("index")'>
+                            <router-link :to="{name:'home'}">
+                                <img src="../../assets/img/logo.png" alt="">
+                            </router-link>
+                        </div>
+                    </el-col>
+                    <el-col :span="12">
+                        <el-menu theme="dark" router :default-active="activeData" class="el-menu-demo" mode="horizontal" @select="handleSelect">
+                            <el-menu-item index="news">
+                                资讯
+                            </el-menu-item>
+                            <el-submenu index="zhiku">
+                                <template slot="title">智库</template>
+                                <el-menu-item index="daoshi">创业导师</el-menu-item>
+                                <el-menu-item index="zhuanjia">专家</el-menu-item>
+                            </el-submenu>
+                            <el-menu-item index="Zhuanti">精彩专题</el-menu-item>
+                            <el-submenu index="qiye">
+                                <template slot="title">企业平台</template>
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">初创企业</el-menu-item></a>
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">智能网联汽车</el-menu-item></a>
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">人工智能</el-menu-item></a>
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">智慧交通</el-menu-item></a>
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">汽车共享</el-menu-item></a>
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">汽车金融</el-menu-item></a>
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">清洁新能源</el-menu-item></a>
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">汽车轻量化</el-menu-item></a>
+                                <!-- <el-menu-item index="zazhiyuedu">杂志阅读</el-menu-item> -->
+                                <a href="http://v2.autoia.com.cn/" target="_blank"><el-menu-item index="#">其他</el-menu-item></a>
+                            </el-submenu>
+                            <!-- <el-menu-item index="5">大数据</el-menu-item> -->
+                            <el-menu-item index="chuangshuo">创 · 说</el-menu-item>
+                        </el-menu>
+                    </el-col>
+                    <el-col :span="4">
+                        <el-input placeholder="" icon="search" v-model="input2" @keyup.enter.native="handleIconClick" :on-icon-click="handleIconClick">
+                        </el-input>
+                    </el-col>
+                    <el-col :span="2" :offset="1">
+                        <a class="btn-dj font-140" href="#" @click="dialogVisible = true">我要对接</a>
+                    </el-col>
+                </el-row>
+            </div>
+        </header>
+        <div class="mob-header">
+            <header>
+                <router-link :to="{name:'home'}" id="cd-logo"><img src="../../assets/img/logo.png" alt="Homepage"></router-link>
+                <a href="#" @click="dialogVisible = true" class="wydj"><span class="cd-menu-text">我要对接</span></a>
+                <a id="cd-menu-trigger" href="#0"><span class="cd-menu-icon"></span></a>
+            </header>
+            <main class="cd-main-content"></main>
+            <nav id="cd-lateral-nav">
+                <ul class="cd-navigation cd-single-item-wrapper">
+                    <li>
+                        <router-link :to="{name:'news'}" class="mob-nav-hidden">资讯</router-link>
+                    </li>
+                </ul>
+                <ul class="cd-navigation">
+                    <li class="item-has-children">
+                        <a href="#0">智库</a>
+                        <ul class="sub-menu">
+                            <li>
+                                <router-link :to="{name:'daoshi'}">创业导师</router-link>
+                            </li>
+                            <li>
+                                <router-link :to="{name:'zhuanjia'}">专家</router-link>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="cd-navigation cd-single-item-wrapper">
+                    <li>
+                        <router-link :to="{name:'Zhuanti'}" class="mob-nav-hidden">精彩专题</router-link>
+                    </li>
+                </ul>
+                <ul class="cd-navigation">
+                    <li class="item-has-children">
+                        <a href="#0">企业平台</a>
+                        <ul class="sub-menu">
+                            <li>
+                                <router-link :to="{name:''}">初创企业</router-link>
+                            </li>
+                            <li>
+                                <router-link :to="{name:''}">智能网联汽车</router-link>
+                            </li>
+                            <li>
+                                <router-link :to="{name:''}">人工智能</router-link>
+                            </li>
+                            <li>
+                                <router-link :to="{name:''}">智慧交通</router-link>
+                            </li>
+                            <li>
+                                <router-link :to="{name:''}">汽车共享</router-link>
+                            </li>
+                            <li>
+                                <router-link :to="{name:''}">汽车金融</router-link>
+                            </li>
+                            <li>
+                                <router-link :to="{name:''}">清洁新能源</router-link>
+                            </li>
+                            <li>
+                                <router-link :to="{name:''}">汽车轻量化</router-link>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="cd-navigation cd-single-item-wrapper">
+                    <li>
+                        <router-link :to="{name:''}" class="mob-nav-hidden">大数据</router-link>
+                    </li>
+                </ul>
+                <ul class="cd-navigation cd-single-item-wrapper">
+                    <li>
+                        <router-link :to="{name:'chuangshuo'}" class="mob-nav-hidden">创·说</router-link>
+                    </li>
+                </ul>
+            </nav>
+            <div class="mob-nav-bg"></div>
+        </div>
+        <!-- 我要对接 -->
+        <el-dialog title="我要对接" :visible.sync="dialogVisible" size="tiny">
+            <div class="text-align-center">
+                <span class="">
+                  <el-button type="danger" @click="yonghuDuijie('2')" class="margin-right-50">企业对接</el-button>
+                  <el-button type="danger" @click="yonghuDuijie('1')">个人对接</el-button>
+              </span>
+            </div>
+            <span slot="footer" class="dialog-footer">
+            <!-- <el-button >取 消</el-button>
+            <el-button type="primary">确 定</el-button> -->
+          </span>
+        </el-dialog>
+        <!-- 企业对接/个人对接 -->
+        <!-- 企业对接/个人对接 -->
+        <yonghu-duijie :val="value" :dialogFormVisible='dialogFormVisible' @CB-dianlog="CB_dianlog"></yonghu-duijie>
+    </div>
+</template>
+<script>
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+// 移动端导航
+import '@/assets/css/mob-nav.css'
+import '@/assets/js/header.js'
+//用户对接
+import yonghuDuijie from './yonghuDuijie.vue'
+export default {
+    data() {
+            return {
+                input2: this.$store.state.keysearch,
+                dialogVisible: false,
+                dialogFormVisible: false,
+                value: ''
+            }
+        },
+        methods: {
+            //我要对接自定义事件
+            CB_dianlog(val) {
+                if (val == 1)
+                    this.dialogVisible = false
+                this.dialogFormVisible = false
+            },
+            //用户对接
+            yonghuDuijie(val) {
+                this.value = val
+                this.dialogVisible = false
+                this.dialogFormVisible = true
+            },
+            //改变选中状态
+            handleSelect(key, keyPath) {
+                this.$store.commit('setActive',key)
+            },
+            handleIconClick() {
+                this.$store.commit('setKeysearch', this.input2)
+                this.$router.push({
+                    name: 'searchnew'
+                })
+            }
+        },
+        computed:mapState({
+            activeData:state=>state.activeData
+        }),
+        components: {
+            yonghuDuijie
+        }
+}
+</script>
+<style>
+.logo{
+    padding-top: 5px;
+}
+.logo img{
+    height: 50px;
+}
+#navbar {
+    background-color: #352d2f;
+    height: 60px;
+    position: fixed;
+    z-index: 99999;
+}
+
+.el-menu {
+    float: left;
+}
+
+.el-menu--horizontal>li.el-menu-item,
+.el-submenu__title {
+    font-size: 18px;
+    padding: 0 12px;
+    margin: 0 8px;
+}
+
+.el-submenu>ul>li.el-menu-item {
+    font-size: 14px
+}
+
+.el-menu--dark {
+    background-color: #352d2f
+}
+
+.el-submenu__title i.el-submenu__icon-arrow {
+    display: none;
+}
+
+.pc-header .el-input {
+    line-height: 60px;
+}
+
+.pc-header .el-input__inner {
+    border-radius: 13px;
+    height: 25px;
+    background-color: #e2e2e2;
+}
+
+.pc-header .el-input__inner:focus {
+    border-color: #8391a5;
+}
+
+.pc-header .el-input__icon {
+    cursor: pointer;
+    color: #828282;
+}
+
+.btn-dj {
+    display: block;
+    line-height: 60px;
+    color: #fff;
+    background-color: #e2534b;
+    text-align: center;
+    padding-bottom: 15px;
+    margin-bottom: -15px;
+}
+
+.btn-dj:hover {
+    color: #fff;
+}
+
+.el-menu--horizontal.el-menu--dark > li:hover,
+.el-menu--horizontal.el-menu--dark > li > .el-submenu__title:hover,
+.el-menu--horizontal>.el-submenu.is-active .el-submenu__title,
+.el-menu--horizontal>.el-submenu:hover .el-submenu__title {
+    background-color: transparent;
+    border-color: #e2534b;
+}
+
+.is-opened .el-submenu__title {
+    border-color: #e2534b!important;
+}
+
+
+/*.el-menu--horizontal.el-menu--dark .el-submenu .el-menu-item.is-active, */
+
+.el-menu-item.is-active,
+.el-menu--horizontal>.el-menu-item:hover,
+.el-menu--horizontal>.el-submenu.is-active .el-submenu__title,
+.el-menu--horizontal>.el-submenu:hover .el-submenu__title {
+    border-color: #e2534b!important;
+    color: #e2534b!important;
+}
+
+.el-menu--horizontal .el-submenu>.el-menu {
+    min-width: 180%;
+    padding: 5px;
+    top: 70px;
+    background-color: #e2534b;
+    border-radius: 4px;
+}
+
+.el-menu--horizontal .el-submenu>.el-menu:before {
+    content: '';
+    border-bottom: 5px solid #e2534b;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    position: absolute;
+    top: -5px;
+    left: 12px;
+}
+
+.el-menu--horizontal .el-submenu .el-menu-item {
+    background-color: rgba(255, 255, 255, .1);
+    color: #fff!important;
+    border-radius: 3px;
+    margin-bottom: 2px;
+}
+
+.el-menu--horizontal.el-menu--dark .el-submenu .el-submenu-title:hover,
+.el-menu--horizontal.el-menu--dark .el-menu-item:hover {
+    background-color: transparent;
+}
+
+.el-menu--horizontal .el-submenu>.el-menu {
+    border-color: transparent;
+}
+
+.el-menu--horizontal .el-menu-item {
+    border-bottom: 0;
+}
+
+.text-align-center {
+    text-align: center;
+}
+
+.text-align-center button {
+    /*margin: 0 50px;*/
+    width: 110px;
+}
+
+.el-dialog__title {
+    color: #501515;
+}
+
+.mob-header {
+    display: none;
+}
+
+@media(max-width: 1600px) {
+    .header .qiye-duijie .el-dialog__body {
+        padding-right: 60px;
+    }
+}
+
+@media(max-width: 1440px) {
+    .header .qiye-duijie .el-dialog__body {
+        padding-right: 30px;
+    }
+}
+
+@media(max-width: 1200px) {
+    .el-menu>li.el-menu-item,
+    .el-submenu__title {
+        font-size: 16px;
+    }
+    .el-menu-item,
+    .el-submenu__title {
+        padding: 0 15px;
+    }
+    .el-dialog--tiny {
+        width: auto;
+    }
+}
+
+@media(max-width: 992px) {
+    .logo img {
+        width: 100%;
+    }
+    .el-menu--horizontal>li.el-menu-item,
+    .el-submenu__title {
+        padding: 0 4px;
+    }
+    .btn-dj {
+        font-size: 14px;
+    }
+    .index-news-txt .aui-ellipsis-11 {
+        -webkit-line-clamp: 7;
+    }
+    .index-news-banner {
+        height: 165px;
+    }
+}
+
+@media(max-width: 768px) {
+    .pc-header {
+        display: none;
+    }
+    .mob-header {
+        display: block;
+    }
+    .mob-header header #cd-logo {
+        margin: 0;
+        position: fixed;
+        left: 12px;
+    }
+    .mob-header header #cd-logo img {
+        height: 40px;
+        margin-top: 5px;
+    }
+    li,
+    ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    .mob-nav-bg {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, .4);
+        z-index: 9998;
+        display: none;
+    }
+    .mob-nav-bg.v-block {
+        display: block;
+    }
+}
+</style>

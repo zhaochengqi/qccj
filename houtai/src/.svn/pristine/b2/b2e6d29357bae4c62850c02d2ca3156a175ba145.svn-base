@@ -1,0 +1,109 @@
+<template>
+    <el-dialog title="添加管理员" :visible.sync="dialogVisible" @close="closeDialog">
+        <el-form :model="form" :rules="rules" label-suffix='：'>
+            <el-form-item label="选择角色组" :label-width="formLabelWidth" prop="">
+                <el-input v-model="form.account"></el-input>
+            </el-form-item>
+            <el-form-item label="用户名" :label-width="formLabelWidth" prop="">
+                <el-input v-model="form.account"></el-input>
+            </el-form-item>
+            <el-form-item label="姓名" :label-width="formLabelWidth" prop="">
+                <el-input v-model="form.account"></el-input>
+            </el-form-item>
+            <el-form-item label="密码" :label-width="formLabelWidth" prop="">
+                <el-input v-model="form.account"></el-input>
+            </el-form-item>
+            <el-form-item label="确认密码" :label-width="formLabelWidth" prop="">
+                <el-input v-model="form.account"></el-input>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="cancel">取 消</el-button>
+            <el-button type="primary" @click="onSubmit">确 定</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script type="text/javascript">
+export default {
+    props: ['dialogFormVisible'],
+    data() {
+        return {
+            form: {
+                account: "",
+            },
+            formLabelWidth: '120px',
+            dialogVisible: false,
+            //教师ID
+            uid: '',
+            //教师姓名
+            name: '',
+            //那个角色组
+            group_id: ''
+        }
+    },
+    watch: {
+        'dialogFormVisible': function(newvalue) {
+            this.dialogVisible = newvalue
+        }
+    },
+    methods: {
+        //确定
+        onSubmit() {
+            this.getData()
+        },
+        //取消
+        cancel() {
+            this.$emit('CB-dialogFormVisible');
+        },
+        closeDialog() {
+            this.$emit('CB-dialogFormVisible');
+        },
+        //查教师是否村在
+        getData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/authgroup/check',
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.uid = this.form.account;
+                    this.name = response.data.data.name;
+                    this.group_id = this.$route.params.id;
+                    this.setData()
+                }
+            }, (error) => {
+                this.$emit('API-ERR')
+            })
+        },
+        //插入数据
+        setData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/authgroupaccess/insert',
+                data: {
+                    //教师ID
+                    uid: this.uid,
+                    //教师姓名
+                    name: this.name,
+                    //那个角色组
+                    group_id: this.group_id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form.account = "";
+                    this.dialogVisible = false;
+                }
+            }, (error) => {
+                this.$emit('API-ERR')
+            })
+        }
+
+    }
+}
+</script>

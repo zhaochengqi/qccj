@@ -1,0 +1,132 @@
+<template>
+    <el-dialog title="导入主干课程" size="tiny" v-model="dialogs" close-on-press-escape @close="cleardialog">
+        <el-form :model="form" :rules="rules" ref="form" :label-width="formLabelWidth">
+            <el-form-item label="专业课群：" prop="kequn">
+                <el-select v-model="form.kequn" clearable>
+                    <el-option v-for="item in kequnList" :key="item.id" :label="item.title" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="上传文件：" class="chuanwenjian" :label-width="formLabelWidth">
+                <el-col :span="8">
+                    <el-upload class="upload-demo" :action="actionUrl" :disabled="jishu" :on-success="handleSuccess" :on-remove="handleRemove" :file-list="fileList" :headers="headersToken">
+                        <el-button size="small" type="primary">点击上传</el-button>
+                    </el-upload>
+                </el-col>
+                <el-col :span="16">
+                    <el-button type="text" @click="xiaZaiBiao"> 示例表</el-button>
+                </el-col>
+                <br/>
+            </el-form-item>
+            <el-form-item>
+                <div class="el-upload__tip">只能上传xlsx文件，且不超过1MB</div>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="handleXfrd('form')" :loading="loadingbiao"> 确 认 </el-button>
+        </div>
+    </el-dialog>
+</template>
+<script type="text/javascript">
+export default {
+    data: function() {
+        return {
+            formLabelWidth: '120px',
+            rules: {
+                kequn: [{
+                    type: 'number',
+                    required: true,
+                    message: '请选择专业课群',
+                    trigger: 'change'
+                }]
+            },
+            //导入
+            form: {
+                kequn: "",
+                filename: ''
+            },
+            dialogs: false,
+            loadingbiao: false,
+            actionUrl: this.API_ROOT + 'api/zhugankecheng/uploadxlsx',
+            fileList: [],
+            jishu: false,
+        }
+    },
+    props: ['dialogUpload', 'excel'],
+    watch: {
+        'dialogUpload': function(newValue, oldValue) {
+            if (newValue == oldValue) return;
+            this.dialogs = newValue;
+        }
+    },
+    methods: {
+        //上传文件成功后
+        handleSuccess(response, file, fileList) {
+            if (!response.code) {
+                this.$message.error(response.err);
+            } else {
+                this.form.filename = response.url;
+                this.jishu = true;
+            };
+        },
+        //移除上传文件时
+        handleRemove() {
+            this.form.filename = '';
+            this.jishu = false;
+        },
+        //下载样表
+        xiaZaiBiao() {
+            window.location.href = this.excel
+        },
+        //确认导入
+        handleXfrd() {
+            this.loadingbiao = true;
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/zhugankecheng/import',
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.dialogs = false;
+                    this.$refs['form'].resetFields();
+                    this.$emit('CB-dialogUpload', -1)
+                };
+                this.loadingbiao = false;
+            }, (error) => {
+                this.loadingbiao = false;
+                this.$emit('API-ERR');
+            });
+        },
+        //关闭导入弹出框
+        cleardialog() {
+            this.form = {
+                kequn: "",
+                filename: ''
+            };
+            this.fileList = [];
+            this.jishu = false;
+            this.$emit('CB-dialogUpload')
+        },
+    },
+    computed: {
+        //专业课群
+        kequnList: function() {
+            return this.$store.state.kequnfangxiang
+        },
+        //上传文件的头信息
+        headersToken: function() {
+            return this.$store.getters.Request_Head
+        }
+    }
+}
+</script>
+<style>
+.fontYS {
+    font-size: 12px;
+    height: 15px;
+    line-height: 15px;
+}
+</style>

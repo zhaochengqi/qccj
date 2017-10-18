@@ -1,0 +1,63 @@
+<template>
+    <!-- <footer id="footer">
+        <div class="pull-right pad-rgt">
+            由 <a href="http://www.ez-tech.cn" class="no-padding el-button el-button--text el-button--small" target="_blank">上海屹瑞信息科技有限公司</a> 技术强力驱动
+        </div>
+    </footer> -->
+    <div class="copy padding-top-30 padding-bottom-30">
+        <div class="container">
+            <el-row>
+                <el-col :xs="10" :sm="11" :md="11" :lg="11">
+                    <div class="copy-left font-130">
+                        <img class="margin-bottom-30" src="../../assets/img/logo-bottom.png" alt="">
+                        <p class="">汽车垂直领域的线上孵化器和加速器</p>
+                        <p class="no-margin">电话：021-39007315</p>
+                    </div>
+                </el-col>
+                <el-col :xs="14" :sm="13" :md="13" :lg="13">
+                    <div class="copy-right">
+                        <el-row :gutter="15" class="margin-bottom-10">
+                            <el-col :xs="10" :sm="8" :md="8" :lg="8">
+                                <dl class="ewm-box clearfix font-120">
+                                    <dt><img src="../../assets/img/ewm01.jpg" alt=""></dt>
+                                    <dd>
+                                        <p>汽车财经网</p>
+                                        <div class="ewm-box-bottom">
+                                            <p class="no-margin">关注我们</p>
+                                            <p class="no-margin">官方微博</p>
+                                        </div>
+                                    </dd>
+                                </dl>
+                            </el-col>
+                            <el-col :xs="10" :sm="8" :md="8" :lg="8">
+                                <dl class="ewm-box clearfix font-120">
+                                    <dt><img src="../../assets/img/ewm02.jpg" alt=""></dt>
+                                    <dd>
+                                        <p class="no-margin">微信号</p>
+                                        <p class="no-margin">Autofortune2014</p>
+                                        <div class="ewm-box-bottom">
+                                            <p class="no-margin">官方微博</p>
+                                        </div>
+                                    </dd>
+                                </dl>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                                <div class="copy-nav font-110">
+                                    <p>
+                                        <router-link :to="{name:'guanyu'}">关于我们</router-link> |
+                                        <router-link :to="{name:'lianxi'}">联系我们</router-link> |
+                                        <router-link :to="{name:'baoliao'}">新闻爆料</router-link> |
+                                        <router-link :to="{name:'jiaru'}">加入我们</router-link>
+                                    </p>
+                                    <p class="no-margin">Copyright © 2014 auto-biz.cn</p>
+                                </div>
+                            </el-col>
+                        </el-row>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+    </div>
+</template>

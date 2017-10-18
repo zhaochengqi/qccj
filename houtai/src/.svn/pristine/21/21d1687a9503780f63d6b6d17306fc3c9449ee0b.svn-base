@@ -1,0 +1,70 @@
+<template>
+    <el-dialog title="编辑友情链接信息" v-model="dialogFormVisible" close-on-press-escape @close="cleardialog">
+        <el-form :model="form" label-width="120px" ref="form">
+            <el-row>
+                <el-form-item label="友情链接名称" required prop="title">
+                    <el-col :md="16">
+                        <el-input v-model="form.title" placeholder="请填写友情链接名称，必填项"></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="链接地址" required prop="link_url">
+                    <el-col :md="16">
+                        <el-input v-model="form.link_url" placeholder="请填写友情链接地址，必填项"></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="排列序号" required prop="paixu">
+                    <el-col :md="24">
+                        <el-input-number v-model="form.paixu" @change="handleChange" :size="small" :min="1" :max="99999"></el-input-number>
+                        <el-tooltip class="item" effect="dark" content="排序规则：优先按照排序序号从大到小排列，排序号相同的，按照添加链接的顺序排列。" placement="top">
+                            <i class="ti-help-alt mar-lft "></i>
+                        </el-tooltip>
+                        <span class="mar-lft text-danger">数字越大，排序越靠前！</span>
+                    </el-col>
+                </el-form-item>
+            </el-row>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="saveData('form')" :loading="loadingbiao">确认保存</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    props: ['dialogStatus', 'id'],
+    data() {
+        return {
+            loadingbiao: false,
+            dialogFormVisible: false,
+            form: {
+                title: '',
+                link_url: '',
+                paixu: 1
+            }
+
+        }
+    },
+    watch: {
+        dialogStatus(newValue) {
+            this.dialogFormVisible = newValue
+        },
+        id(newValue, oldValue) {
+            if (typeof newValue == 'object') return
+        }
+    },
+    methods: {
+        cleardialog() {
+            this.$emit('CB-dialogStatus', false)
+        },
+        //保存数据
+        saveData(form) {
+            console.log(form)
+
+        }
+    }
+}
+</script>

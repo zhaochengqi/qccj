@@ -1,0 +1,86 @@
+<template>
+		<el-col :xs="14" :sm="8" :md="8" :lg="8">
+		    <div class="zixun-date">
+		        <i class="fa fa-thumbs-o-up" style="cursor:pointer; " :class="qieclass" @click="onSet(formData.id,formData.type,1)"></i> 顶 {{formData.top}}　<i class="fa fa-thumbs-o-down" style="cursor:pointer" @click="onSet(formData.id,formData.type,2)"></i> 踩 {{formData.step}}
+		        <!-- <i class="el-icon-star-off"></i> 收藏 0 -->
+		    </div>
+		</el-col>
+</template>
+<script>
+export default {
+    activated: function() {
+    	this.getData()
+    },
+    data() {
+        return {
+            formData: {},
+            qieclass:''
+        }
+    },
+    props: ['dialogStatus','type'],
+    watch: {
+        'type':function(newValue, oldValue){
+        	if(newValue == oldValue || newValue == '') return
+        		this.type=newValue
+        		this.getData()
+        }
+    },
+    methods: {
+        onSet(id,type,state){
+            this.setData(id,type,state)
+            this.getData()
+            this.qieclass="yanse"
+        }, 
+        //处理数据
+        setData(id,type,state) {
+            var url
+            url = this.API_ROOT + '/home_api/topandstep/tinsert';
+            this.axios({
+                method: 'post',
+                url: url,
+                data: {
+                	type:type,
+                    tid: this.$route.params.id,
+                    state:state
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } 
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+
+        },
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/topandstep/tas',
+                data: {
+                	type:this.type,
+                    tid: this.$route.params.id
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.formData = response.data.data
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+        cleardialog() {
+            this.$emit('CB-dialogStatus')
+        }
+    },
+    computed: {},
+}
+</script>
+<style>
+    .yanse{
+        color:red;
+    }
+</style>

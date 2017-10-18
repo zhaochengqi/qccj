@@ -1,0 +1,119 @@
+<template>
+    <el-dialog title="查看内容" :visible.sync="dialogFormVisible" size='tiny' :before-close='beforeClose' v-loading="loading" element-loading-text="拼命加载中">
+        <el-row class="pad-btm">
+            <!-- <el-col :span="12">
+                <span>用户类型：</span> {{TextData.tid==1?'个人用户':'企业用户'}}
+            </el-col> -->
+            <el-col :span="12"><span>用户名：</span>{{TextData.name}}</el-col>
+        </el-row>
+        <el-row class="pad-btm">
+            <el-col :span="12"><span>联系电话：</span>{{TextData.phone}}</el-col>
+            <el-col :span="12"><span>邮箱：</span>{{TextData.email}}</el-col>
+        </el-row>
+        <el-row class="pad-btm">
+            <el-col :span="24"><span>对接诉求：</span>{{dockingFilter(TextData.docking)}}</el-col>
+        </el-row>
+        <el-row class="pad-btm">
+            <el-col :span="24"><span >内容：</span>{{TextData.content}}</el-col>
+        </el-row>
+        <el-row class="pad-btm">
+            <el-col :span="24">
+                <el-button type="primary" size="mini" @click="xiazaiFujian"> 下载附件 </el-button>
+            </el-col>
+        </el-row>
+        <div slot="footer" class="dialog-footer">
+            <span type="primary" @click="dialogFormVisible = false">  </span>
+        </div>
+    </el-dialog>
+</template>
+<script>
+export default {
+    props: ['dialog', 'id'],
+    data() {
+        return {
+            dialogFormVisible: false,
+            loading: false,
+            TextData: {
+                add_time: " ",
+                content: " ",
+                dock_file: " ",
+                docking: [],
+                email: " ",
+                id: -1,
+                name: " ",
+                phone: " ",
+                tid: " ",
+                update_time: ''
+            }
+        }
+    },
+    watch: {
+        'dialog': function(newValue, oldValue) {
+            this.dialogFormVisible = newValue
+            if (newValue)
+                this.getData()
+        }
+    },
+    methods: {
+        beforeClose() {
+            this.TextData = {
+                add_time: " ",
+                content: " ",
+                dock_file: " ",
+                docking: [],
+                email: " ",
+                id: -1,
+                name: " ",
+                phone: " ",
+                tid: " ",
+                update_time: ''
+            }
+            this.$emit('CB-Docking')
+        },
+        //下载附件
+        xiazaiFujian() {
+            window.open(this.TextData.dock_file);
+        },
+        getData() {
+            //请求数据
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/docking/read',
+                data: {},
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.TextData = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+
+        },
+        //过滤
+        'dockingFilter': function(val) {
+            let x = [],
+                m = 0;
+            for (let i = 0; i < this.dockingArr.length; i++) {
+                for (let j = 0; j < val.length; j++) {
+                    if (i + 1 == val[j]) {
+                        x[m] = this.dockingArr[i];
+                        m++;
+                    }
+                }
+            }
+            return x.join(",")
+        }
+    },
+    computed: {
+        dockingArr() {
+            return this.$store.state.dockingArr
+        }
+    }
+}
+</script>

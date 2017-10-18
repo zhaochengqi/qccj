@@ -1,0 +1,72 @@
+<template>
+    <aside id="aside-container">
+        <div id="aside">
+            <div class="nano has-scrollbar">
+                <div class="nano-content" tabindex="0" style="right: -15px;">
+                    <!--================================-->
+                    <div class="tab-content">
+                        <!--First tab (Contact list)-->
+                        <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+                        <div class="tab-pane fade in active" id="demo-asd-tab-1">
+                            <p class="pad-hor mar-top text-center text-primary font-110">请点击您需要前往的系统名称</p>
+                            <hr>
+                            <div class="list-group bg-trans mar-top">
+                                <a :href="TMPT_ROOT + '/jump/7/' + item.index + '/' + token" class="list-group-item" v-for="(item,index) in selectData" key="item.index">
+                                    <span class="badge badge-info badge-icon badge-fw pull-left"></span> {{item.title}}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="nano-pane" style="display: none;">
+                    <div class="nano-slider" style="height: 1515px; transform: translate(0px, 0px);"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+</template>
+<script>
+import Qs from 'qs'
+export default {
+    created: function() {
+        this.getSelect()
+    },
+    data: function() {
+        return {
+            selectData: []
+        }
+    },
+    methods: {
+        getSelect() {
+            this.axios({
+                method: 'post',
+                url: this.TMPT_ROOT + '/pingtai/pingtai',
+                data: {
+                    account: this.account
+                },
+                transformRequest: [function(data) {
+                    // 这里可以在发送请求之前对请求数据做处理，比如form-data格式化等，这里可以使用开头引入的Qs
+                    data = Qs.stringify(data);
+                    return data;
+                }]
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.selectData = response.data.data
+                }
+            }, (error) => {
+                this.$emit('API-ERR')
+            })
+        }
+    },
+    computed: {
+        account: function() {
+            return this.$store.state.userinfo.userinfo.account
+        },
+        token: function() {
+            return this.$store.state.userinfo.userinfo.token
+        }
+    }
+}
+</script>

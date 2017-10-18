@@ -1,0 +1,47 @@
+<template>
+    <el-row v-loading="loading" element-loading-text="拼命加载中">
+        <div class="yq-link">
+            <div class="yq-link-title margin-bottom-40">
+                <p class="no-margin"></p>
+                <span class="font-180">友情链接</span>
+            </div>
+            <div class="yq-link-main font-140">
+                <span v-for="item in linkData" :key="item">
+                    <a :href="item.link_url" target="_blank">{{item.link_name}}</a>
+                </span>
+            </div>
+        </div>
+    </el-row>
+</template>
+<script>
+export default {
+    created: function() {
+        this.getLink()
+    },
+    data() {
+        return {
+            linkData: [],
+            loading: false
+        }
+    },
+    methods: {
+        getLink() {
+            this.loading = true;
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/index/link'
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.linkData = response.data.data
+                }
+                this.loading = false;
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        }
+    }
+}
+</script>

@@ -1,0 +1,128 @@
+<template>
+    <div>
+        <el-dialog title="加分记录" :visible.sync="dialogVisible" @close="closeDialog" v-loading="loading" element-loading-text="拼命加载中">
+            <el-table :data="tableData" max-height="400" border height="350">
+                <el-table-column type="index" label="#"></el-table-column>
+                <el-table-column prop="title" label="奖项名称" show-overflow-tooltip min-width="90"></el-table-column>
+                <el-table-column prop="level_title" label="获奖等级" min-width="60"></el-table-column>
+                <el-table-column prop="type_title" label="加分类型" show-overflow-tooltip min-width="90"></el-table-column>
+                <el-table-column label="状态" width="70">
+                    <template scope="scope">
+                        <el-tooltip v-if="scope.row.zhuangtai==1" class="item " effect="dark" :content="scope.row.content" placement="top">
+                            <el-tag type="danger" class="tuihui" :hit="hit">退回</el-tag>
+                        </el-tooltip>
+                        <el-tag v-if="scope.row.zhuangtai==2" type="warning" class="tuihui">待审核</el-tag>
+                        <el-tag type="success" v-if="scope.row.zhuangtai==3" class="tuihui">通过</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" min-width="50">
+                    <template scope="scope">
+                        <el-button size="mini" type='success' v-if="tableData.zhuangtai!=2" @click="handleEdit(scope.row.id )">
+                            <i class="el-icon-check"></i> 通过
+                        </el-button>
+                        <el-button size="mini" type="warning" v-else @click="handleThui(scope.row.id )">
+                            <i class="el-icon-close"></i> 退回
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-dialog>
+        <jfshengheTuihui :id="id" :dialog="dialog" @CB-dialog="CB_dialogFormVisible"></jfshengheTuihui>
+    </div>
+</template>
+<script type="text/javascript">
+import jfshengheTuihui from '@/page/shenhe/jfshenghe_tuihui'
+export default {
+    data: function() {
+        return {
+            loading: false,
+            dialogVisible: false,
+            tableData: [{
+                title: '上海高校学生创造发明“科技创业杯”',
+                level_title: '省部级',
+                type_title: '挑战类（小）--创新创业类',
+                zhuangtai: 2,
+                content: '信息不准确'
+            }],
+            dialog: false,
+            hit: false
+        }
+    },
+    props: ['dialogFormVisible', 'id'],
+    watch: {
+        'dialogFormVisible': function(newValue, oldValue) {
+            if (newValue == oldValue) return;
+            this.dialogVisible = newValue;
+            if (this.dialogVisible) {
+                // this.getData()
+            } else {
+                // this.tableData = []
+            }
+        }
+    },
+    methods: {
+        closeDialog() {
+            this.$emit('CB-dialogFormVisible');
+        },
+        //操作通过
+        handleEdit(id) {
+            this.$confirm('确认通过审核？', '系统提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then((response) => {
+                // this.$http.post(this.API_ROOT + '/api/stu_local/sync', {}, this.$store.getters.Request_Head).then((response) => {
+                //     if (response.data.status.code !== 1001) {
+                //         this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                //     } else {
+                //         this.$message({
+                //             type: 'success',
+                //             message: response.data.data
+                //         })
+                //         this.getData()
+                //     }
+                // }, (error) => {
+                //     this.$emit('API-ERR')
+                // })
+                console.log(val)
+                this.caozuo = !this.caozuo
+            }).catch(() => {})
+        },
+        //操作退回
+        handleThui() {
+            this.dialog = true;
+        },
+        //获取主数据
+        getData() {
+            this.loading = true
+            this.$http.post(this.API_ROOT + '/api/selectlog', {
+                pid: this.id,
+                page: this.currentPage,
+                listRows: this._pageSize,
+            }, this.$store.getters.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+        CB_dialogFormVisible() {
+            this.dialog = false
+        }
+    },
+    components: {
+        jfshengheTuihui
+    }
+}
+</script>
+<style>
+.tuihui:hover {
+    cursor: pointer;
+}
+</style>

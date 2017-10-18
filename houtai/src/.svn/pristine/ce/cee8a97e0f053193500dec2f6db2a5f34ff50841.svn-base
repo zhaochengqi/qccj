@@ -1,0 +1,379 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row :style="{ 'min-height': _PageHeight+'px'}">
+            <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+                <!-- 注意：增加rules验证 -->
+                <el-form-item label="资讯标题" prop="title">
+                    <el-col :md="16" class="pad-rgt">
+                        <el-input v-model="form.title" placeholder="请填写资讯标题名称"></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item prop="source" label="资讯来源">
+                    <el-col :md="8">
+                        <el-select v-model="form.source" @change="zxChange" filterable clearable allow-create placeholder="请填写资讯来源" style="width:100%" action="https://jsonplaceholder.typicode.com/posts/">
+                            <el-option v-for="(item,index) in news_source_data" :key="index" :label="item" :value="item">
+                            </el-option>
+                        </el-select>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="是否头条">
+                    <el-switch on-text="是" off-text="否" on-value="2" off-value='1' v-model="form.is_toutiao"></el-switch>
+                    <el-tooltip class="item" effect="dark" content="如果设置为“是”，则这条资讯会显示到主页的“头条”位置" placement="right">
+                        <i class="ti-help-alt mar-lft "></i>
+                    </el-tooltip>
+                </el-form-item>
+                <el-form-item label="资讯图片" id="qiniuFuji">
+                    <el-col :span="12">
+                        <QNUpload type="drag" :dragdrop='dragdrop' max_file_size="500kb" :filters='filters' @Callback-UploadProgress="CB_UploadProgress" @Callback-GetFileUrl="CB_GetFileUrl" @Callback-Error="CB_Error"></QNUpload>
+                    </el-col>
+                    <el-col :span="12">
+                        <el-progress type="circle" :percentage="qn_upload.img_upload_progress" :status='qn_upload.img_upload_status' v-if="qn_upload.img_upload_progress>0&&qn_upload.img_upload_progress<100"></el-progress>
+                        <span v-else-if="form.img" class="newsImage">
+                            <img :src="form.img" alt="" class="thumbnail" style="max-width:255px;max-height:200px">
+                            <span class="el-icon-circle-cross"  @click="rmImage">
+                            </span>
+                        </span>
+                    </el-col>
+                    <el-col :span="24">
+                        <div class="el-upload__tip" style="line-height:25px">
+                            上传资讯图片，比例为4 : 3 ，上传jpg/png/bmp格式图片，大小不能超过500KB
+                        </div>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="资讯导读">
+                    <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 4}" :maxlength='zxmaxlength' placeholder="填写资讯导读内容，100字以内，尽量简洁明了，一般用于显示到文章列表中" v-model="form.daodu"></el-input>
+                </el-form-item>
+                <el-form-item label="详细内容">
+                    <vueEditor :editContent="form.content" @Callback-Content="CB_Content"></vueEditor>
+                </el-form-item>
+                <hr>
+                <el-form-item label="页面关键词">
+                    <el-select v-model="form.keywords" multiple filterable allow-create placeholder="请选择或填写关键词内容，尽量填写能够定位当前资讯内容的准确关键词，数量不要太多 " style="width:100%">
+                        <el-option v-for="item in news_guanjianchi_data" :key="item.id" :label="item" :value="item">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="页面描述（SEO）">
+                    <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 4}" :maxlength='msmaxlength' placeholder="100字以内，主要显示到网页源码中的“description”属性中，利于搜索引用优化 " v-model="form.miaoshu"></el-input>
+                </el-form-item>
+                <el-form-item label="发布日期" prop="fabu_time">
+                    <el-col :md="8">
+                        <el-date-picker v-model="form.fabu_time" type="datetime" placeholder="选择资讯发布时间" style="width:100%" @change="timeChange" format='yyyy-MM-dd HH:mm'>
+                        </el-date-picker>
+                    </el-col>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" v-if="authCheck(60)||authCheck(61)" size="large" :loading='loadingbiao' @click="onSubmit">保存新闻资讯</el-button>
+                </el-form-item>
+            </el-form>
+        </el-row>
+    </el-card>
+</template>
+<script>
+import Vue from 'vue'
+
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+//导入编辑器组件（共用）
+import vueEditor from '@/components/editor'
+import goBack from '@/components/goBack'
+import QNUpload from '@/components/qiniu-upload'
+export default {
+    activated: function() {
+        if (this.$route.params.id) {
+            this.getData()
+        } else {
+            this.form.fabu_time = new Date()
+        }
+    },
+    deactivated() {
+        this.$refs['form'].resetFields();
+        this.form = {
+            title: '',
+            is_toutiao: '1',
+            miaoshu: '',
+            keywords: ['汽车财经'],
+            source: null,
+            daodu: '',
+            content: '',
+            fabu_time: '',
+            img: ''
+        }
+    },
+    data() {
+        return {
+            loading: false,
+            //最大输入长度
+            msmaxlength: 100,
+            zxmaxlength: 100,
+            dragdrop: true,
+            //上传表单数据
+            form: {
+                title: '',
+                is_toutiao: '1',
+                miaoshu: '',
+                keywords: ['汽车财经'],
+                source: null,
+                daodu: '',
+                content: '',
+                fabu_time: '',
+                img: ''
+            },
+            //进度条
+            qn_upload: {
+                img_upload_progress: 0,
+                img_upload_status: ''
+            },
+            disabled: true,
+            //时间选择
+            time: '',
+            //验证器
+            rules: {
+                title: [{
+                    required: true,
+                    message: '请填写资讯标题名称！',
+                    trigger: 'blur'
+                }],
+                source: [{
+                    required: true,
+                    message: '请填写资讯来源！',
+                    trigger: 'change'
+                }],
+                fabu_time: [{
+                    type: 'date',
+                    required: true,
+                    message: '请选择发布时间！',
+                    trigger: 'change'
+                }]
+            },
+            //按钮loading
+            loadingbiao: false,
+            //上传进度
+            percentage: 0,
+            status: '',
+            //上传格式
+            filters: {
+                mime_types: [{
+                    title: "Image Files",
+                    extensions: "jpg,png,bmp,jpeg"
+                }]
+            }
+        }
+    },
+    methods: {
+        zxChange(val) {
+            if (val)
+                val = val.trim();
+            if (!val) return;
+            let jishu = 0;
+            for (var i in this.news_source_data) {
+                if (val == this.news_source_data[i])
+                    jishu++
+            }
+            if (!jishu) this.$store.commit('setNewsSourceType', val)
+        },
+        //点击删除图片
+        rmImage() {
+            this.$confirm('确定要移除图片吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.form.img = ''
+            }).catch(() => {});
+        },
+        //提交数据
+        onSubmit() {
+            this.loadingbiao = true;
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    this.setData();
+                } else {
+                    this.loadingbiao = false
+                    return false;
+                }
+            });
+        },
+        //详细内容
+        CB_Content(content, token) {
+            this.form.content = content
+        },
+        //时间选择后
+        timeChange(value) {
+            this.time = value
+        },
+        //处理数据
+        setData() {
+            var url
+            if (this.$route.params.id) {
+                url = this.API_ROOT + '/api/news/update';
+            } else {
+                url = this.API_ROOT + '/api/news/insert';
+            }
+            this.form.fabu_time = this.time;
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.form.fabu_time = new Date(this.time)
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$router.go(-1)
+                }
+                this.loadingbiao = false
+            }, (error) => {
+                this.form.fabu_time = new Date(this.time)
+                this.loadingbiao = false
+                this.$emit('API-ERR');
+            })
+        },
+        //编辑页面进来
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/news/read',
+                data: {
+                    id: this.$route.params.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = Object.assign(this.form, response.data.data)
+                    this.form.fabu_time = new Date(this.form.fabu_time)
+                }
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loading = false
+            })
+        },
+
+        /**
+         * [回调处理七牛上传相关数据]
+         * 其他更多回调方法参考 七牛组件
+         */
+        //文件上传过程，主要用于展现上传进度
+        CB_UploadProgress(file) {
+            this.qn_upload.img_upload_status = ''
+            this.qn_upload.img_upload_progress = file.percent;
+            if (file.percent == 100) {
+                this.qn_upload.img_upload_status = 'success'
+            }
+        },
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl(file) {
+            this.$message({
+                message: '图片上传成功',
+                type: 'success'
+            });
+            this.form.img = file;
+        },
+
+        //获取上传错误信息
+        CB_Error(err, info) {
+            this.qn_upload.img_upload_status = 'exception'
+            if (err.code == -600) {
+                this.$message({
+                    message: '图片最大上传大小不能超过500KB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '图片上传错误！',
+                    type: 'warning'
+                });
+            }
+        }
+
+    },
+    //计算属性
+    computed: {
+        ...mapState({
+            news_source_data: state => state.news_source_type,
+            news_guanjianchi_data: state => state.news_guanjianchi
+        }),
+    },
+    //注意别忘记挂载组件
+    components: {
+        vueEditor,
+        goBack,
+        QNUpload
+    }
+}
+</script>
+<style>
+.avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: #fbfdff
+}
+
+.avatar-uploader .el-upload:hover {
+    border-color: #20a0ff;
+}
+
+.avatar-uploader-icon {
+    font-size: 50px;
+    color: #ccc;
+    width: 220px;
+    height: 145px;
+    line-height: 145px;
+    text-align: center;
+}
+
+.avatar {
+    width: 220px;
+    height: 145px;
+    display: block;
+}
+
+.newsImage {
+    position: relative;
+    display: block;
+    max-width: 255px;
+    max-height: 200px
+}
+
+.newsImage>span {
+    background: white;
+    position: absolute;
+    cursor: pointer;
+    right: 0px;
+}
+
+.newsImage>span:hover {
+    color: #FF4949;
+}
+
+.newsImage img {
+    position: absolute;
+}
+
+.newsImage img:hover {
+    cursor: pointer;
+}
+</style>

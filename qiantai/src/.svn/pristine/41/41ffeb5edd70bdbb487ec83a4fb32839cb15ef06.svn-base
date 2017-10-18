@@ -1,0 +1,198 @@
+<template>
+    <div class="cy-ds animated fadeIn">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="margin-bottom-50">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17" v-loading="loading" element-loading-text="拼命加载中">
+                    <div class="news-details">
+                        <h1 class="margin-bottom-30 font-180">{{formData.title}}</h1>
+                        <div class="news-date margin-bottom-30 font-110">{{formData.author_name}} &nbsp;&nbsp;发表于&nbsp; {{formData.fabu_time?formData.fabu_time:formData.add_time}} &nbsp;&nbsp;来源：&nbsp;{{formData.source}}</div>
+                        <div class="news-jj margin-bottom-40 font-140">
+                            {{formData.daodu}}
+                        </div>
+                        <div class="news-main font-140">
+                            <p v-html="formData.content"></p>
+                        </div>
+                    </div>
+                    <div class="fenxiang margin-top-40 padding-top-20 margin-bottom-20">
+                        <el-row class="font-110">
+                            <el-col :md="16">
+                                <!-- JiaThis Button BEGIN -->
+                                <div class="jiathis_style_32x32">
+                                    <a class="jiathis_button_tsina"></a>
+                                    <a class="jiathis_button_weixin"></a>
+                                    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+                                </div>
+                            </el-col>
+                            <el-col :md="4" class="text-right no-padding">
+                                <vue-star animate="animated rotateIn" color="#F05654">
+                                    <a slot="icon" class="fa fa-thumbs-up" @click="handleClick(1,10000)"> 顶 100</a>
+                                </vue-star>
+                            </el-col>
+                            <el-col :md="4">
+                                <vue-star animate="animated rotateIn" color="#C80000">
+                                    <a slot="icon" class="fa fa-thumbs-down" @click="handleClick(2,10000)"> 踩 100</a>
+                                </vue-star>
+                            </el-col>
+                        </el-row>
+                    </div>
+                    <Inner_xiangguan></Inner_xiangguan>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <Inner_zixun @CB-zuixingzixun="CB_zuixingzixun">此处显示最新资讯</Inner_zixun>
+                        <Inner_zhuanti>此处显示专题</Inner_zhuanti>
+                        <Inner_guanggao weizhi='资讯内页' listRows='1'>此处显示广告</Inner_guanggao>
+                    </div>
+                </el-col>
+            </el-row>
+            <Inner_links>此处显示友情链接</Inner_links>
+        </div>
+    </div>
+</template>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<script>
+//挂载最新资讯
+import Inner_zixun from '@/page/news/zixun'
+//挂载专题
+import Inner_zhuanti from '@/page/index/zhuanti'
+//挂载友情链接
+import Inner_links from '@/page/index/links'
+//挂载广告
+import Inner_guanggao from '@/page/news/guanggao'
+//挂载想关文章
+import Inner_xiangguan from '@/page/news/xiangguanwenzhang'
+
+import VueStar from 'vue-star'
+
+export default {
+    beforeCreate: function() {
+        //设置当前页面标题名称
+        document.title = this.$route.meta.pagename;
+    },
+    activated: function() {
+        if (this.$route.params.id) {
+            this.getData(this.$route.params.id);
+        } else {
+            this.$message.error('未查询到相关信息！')
+        }
+    },
+    data() {
+        return {
+            formData: {},
+            advert: {},
+            article: [],
+            loading: false,
+            type: '',
+            guanggaoData: {}
+        }
+    },
+    methods: {
+        //接收子组件传送过来的数据
+        CB_dincai(val) {
+            this.getData(val);
+        },
+        //点击顶和踩时的方法
+        handleClick(type, id) {
+            console.log(type, id)
+        },
+        //相关文章
+        tiaoImage(val) {
+            this.getData(val)
+            this.$router.push({
+                name: 'details',
+                params: {
+                    id: val
+                }
+            })
+        },
+        //最新资讯
+        CB_zuixingzixun(val) {
+            this.getData(val)
+            this.$router.push({
+                name: 'details',
+                params: {
+                    id: val
+                }
+            })
+        },
+        //分享插件
+        init: function() {
+            let url = 'https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js'
+            let script = document.createElement('script')
+            script.setAttribute('src', url)
+            document.getElementsByTagName('head')[0].appendChild(script)
+        },
+        getData(id) {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/read',
+                data: {
+                    id: id
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.formData = response.data.data
+                    document.querySelector('meta[name="keywords"]').content = response.data.data.keyword
+                    document.querySelector('meta[name="description"]').content = response.data.data.miaoshu
+                    document.title = response.data.data.title
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+    },
+    mounted() {
+        this.init()
+    },
+    components: {
+        Inner_zixun,
+        Inner_zhuanti,
+        Inner_links,
+        Inner_guanggao,
+        VueStar,
+        Inner_xiangguan
+    }
+}
+
+</script>
+<style scoped>
+.VueStar {
+    position: relative;
+}
+
+
+.news-details {
+    color: #501515;
+}
+
+.news-details img {
+    max-width: 100%;
+}
+
+.news-details h1 {
+    color: #501515;
+    margin-top: 0;
+}
+
+.news-jj {
+    font-weight: 600;
+}
+
+.fenxiang {
+    border-top: 1px dashed #dcdcdc;
+}
+
+.fx-menu a {
+    display: inline-block;
+}
+
+.fx-menu img {
+    float: left;
+}
+
+</style>

@@ -1,0 +1,129 @@
+<template>
+    <div class="cy-ds">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="margin-bottom-50">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17" v-loading="loading" element-loading-text="拼命加载中">
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom" v-for="item in newsData" :key="(item.id)" v-if="newsData">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                               <a :href="url+item.id" target="_Blank">
+                                    <img :src="item.img?item.img+'!289x173':'./static/img/default.jpg'" alt="">
+                                </a>
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150  margin-bottom-10">
+                                      <a :href="url+item.id" target="_Blank">
+                                        {{item.title}}
+                                      </a>
+                                  </h4>
+                                <p class="font-110 aui-ellipsis-2">{{item.daodu}}</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> &nbsp; {{item.author_name}} &nbsp;&nbsp;&nbsp;{{item.time}}
+                                        </el-col>
+                                        <!-- <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col> -->
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <div v-if="newsData.length==0">
+                        <div class="font-160 font-bolder text-align-center margin-top-40 margin-bottom-20">未查询到相关信息</div>
+                    </div>
+                    <div class="fenye padding-top-40 margin-bottom-50" v-if="newsData.length>0">
+                        <div class="block">
+                            <el-pagination layout="prev, pager, next" :total="total" @current-change="handleCurrentChange" :pageSize="pageSize" :current-page="currentPage">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <Index_zhuanti></Index_zhuanti>
+                        <Index_chuangshuo></Index_chuangshuo>
+                        <Index_advert weizhi="咨询首页" listRows=1></Index_advert>
+                    </div>
+                </el-col>
+            </el-row>
+            <Index_links>此处显示友情链接</Index_links>
+        </div>
+    </div>
+</template>
+<script>
+//挂载专题组件
+import Index_zhuanti from '@/page/index/zhuanti'
+//挂载创说组件
+import Index_chuangshuo from '@/page/index/chuangshuo'
+//挂载友情链接
+import Index_links from '@/page/index/links'
+//挂载广告
+import Index_advert from '@/page/news/guanggao'
+export default {
+    activated: function() {
+        this.getData()
+    },
+    data() {
+        return {
+            total: 0,
+            currentPage: 1,
+            loading: false,
+            newsData: [],
+            advert: {},
+            keys: '',
+            pageSize:6,
+            url : process.env.NODE_ENV == "production" ? this.WEB_ROOT+"/details-" : this.API_ROOT+'details-'
+        }
+    },
+    watch: {
+        '$store.state.keysearch': function(newValue, oldValue) {
+            if (newValue == oldValue || !newValue || newValue == '') return
+            this.getData()
+        }
+    },
+    methods: {
+        //当前页改变
+        handleCurrentChange(val) {
+            this.currentPage = val
+            this.getData()
+        },
+        //获取数据
+        getData() {
+            this.keys = this.$store.state.keysearch
+            document.title = this.$store.state.keysearch + this.$route.meta.pagename
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news',
+                data: {
+                    listRows: 6,
+                    page: this.currentPage,
+                    keys: this.keys
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$messege.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.newsData = response.data.data
+                    this.total = response.data.count
+                    console.log(this.total)
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('APP-ERR')
+            })
+        }
+    },
+    components: {
+        Index_zhuanti,
+        Index_chuangshuo,
+        Index_links,
+        Index_advert
+    }
+}
+</script>

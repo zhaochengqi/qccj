@@ -1,0 +1,161 @@
+<template>
+    <div class="fenxiang margin-top-40 padding-top-20 margin-bottom-20">
+        <el-row class="font-110">
+            <el-col :xs="12" :sm="16" :md="16" :lg="16">
+                <!-- JiaThis Button BEGIN -->
+                <div class="jiathis_style_32x32">
+                    <a class="jiathis_button_tsina"></a>
+                    <a class="jiathis_button_weixin"></a>
+                    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+                </div>
+            </el-col>
+            <el-col :xs="6" :sm="4" :md="4" :lg="4" class="text-right no-padding">
+                <vue-star animate="animated rotateIn" color="#6cac70">
+                    <a slot="icon" class="fa fa-thumbs-up" @click="handleClick(1)"> 顶 {{ding_count}}</a>
+                </vue-star>
+            </el-col>
+            <el-col :xs="6" :sm="4" :md="4" :lg="4">
+                <vue-star animate="animated rotateIn" color="#f00">
+                    <a slot="icon" class="fa fa-thumbs-down" @click="handleClick(2)"> 踩 {{cai_count}}</a>
+                </vue-star>
+            </el-col>
+        </el-row>
+    </div>
+</template>
+<script>
+//分享点赞
+import VueStar from 'vue-star'
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    activated:function () {
+        this.getData()
+    },
+    props: ['dzid'],
+    data() {
+        return {
+            formData: {},
+            dingclass: '',
+            caiclass: '',
+            ding_count:0,
+            cai_count:0,
+            top:'',
+            tread:''
+        }
+    },
+    methods: {
+        //点击顶和踩时的方法
+        handleClick(type) {
+            if(type==1){
+                if(this.dingData.length==0){
+                    this.formData={
+                        id:this.dzid,
+                        top:1
+                    }
+                }else{
+                    for(var i in this.dingData){
+                        if(this.dingData[i]==this.dzid){
+                            this.formData={
+                                id:this.dzid,
+                                top:2
+                            }
+                        }else{
+                            this.formData={
+                                id:this.dzid,
+                                top:1
+                            }
+                        }
+                    }
+                }
+            }else if(type==2){
+                if(this.caiData.length==0){
+                    this.formData={
+                        id:this.dzid,
+                        tread:1
+                    }
+                }else{
+                    for(var i in this.caiData){
+                        if(this.caiData[i]==this.dzid){
+                            this.formData={
+                                id:this.dzid,
+                                tread:2
+                            }
+                        }else{
+                            this.formData={
+                                id:this.dzid,
+                                tread:1
+                            }
+                        }
+                    }
+                }
+            }
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/point',
+                data: this.formData
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    if(type==1){
+                        if(this.formData.top==1){
+                            this.$store.commit('setDingData',this.dzid)
+                        }else{
+                            this.$store.commit('setDingdata',this.dzid)
+                        }
+                        this.ding_count=response.data.data.ding_count
+                    }else{
+                        if(this.formData.tread==1){
+                            this.$store.commit('setCaiData',this.dzid)
+                        }else{
+                            this.$store.commit('setCaidata',this.dzid)
+                        }
+                        this.cai_count=response.data.data.cai_count
+                    }
+                }
+            }, (error) => {
+                this.$emit('APP-ERR')
+            })
+        },
+        getData(){
+           this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/pointnum',
+                data: {
+                    id: this.dzid
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.ding_count=response.data.data.topnum
+                    this.cai_count=response.data.data.treadnum
+                }
+            }, (error) => {
+                this.$emit('APP-ERR')
+            })
+        }
+    },
+    components:{
+        VueStar
+    },
+    computed: mapState({
+        caiData:state=>state.caiData,
+        dingData:state=>state.dingData
+    }),
+}
+</script>
+<style scoped>
+.VueStar {
+    position: relative;
+}
+
+.VueStar a{
+    color: inherit;
+    cursor: pointer;
+}
+
+</style>

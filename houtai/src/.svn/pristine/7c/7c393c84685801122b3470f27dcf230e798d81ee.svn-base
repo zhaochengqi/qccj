@@ -1,0 +1,155 @@
+<template>
+    <el-dialog title="添加管理员" size='small' :visible.sync="dialogVisible" @close="closeDialog">
+        <el-row>
+            <el-col :span="23">
+                <el-form :model="form" ref="form" :rules="rules" label-suffix='：'>
+                    <el-form-item label="选择角色组" :label-width="formLabelWidth" prop="group_id">
+                        <el-select v-model="form.group_id" style="width:100%;" multiple clearable placeholder="选择角色组">
+                            <el-option v-for="item in rules_juesezu" :key="item.id" :label="item.title" :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="用户名" required :label-width="formLabelWidth" prop="account">
+                        <el-input v-model="form.account"></el-input>
+                    </el-form-item>
+                    <el-form-item label="姓名" :label-width="formLabelWidth" prop="name">
+                        <el-input v-model="form.name"></el-input>
+                    </el-form-item>
+                    <el-form-item label="密码" :label-width="formLabelWidth" required prop="password">
+                        <el-input v-model="form.password" type="password"></el-input>
+                    </el-form-item>
+                    <el-form-item label="确认密码" :label-width="formLabelWidth" required prop="qrpassword">
+                        <el-input v-model="form.qrpassword" type="password"></el-input>
+                    </el-form-item>
+                </el-form>
+            </el-col>
+        </el-row>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="onSubmit">确定保存</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script type="text/javascript">
+var zz = /^\w{0,50}$/;
+export default {
+    props: ['dialogFormVisible'],
+    data() {
+        return {
+            form: {
+                group_id: [],
+                account: "",
+                name: "",
+                password: "",
+                qrpassword: "",
+            },
+            formLabelWidth: '120px',
+            dialogVisible: false,
+            //教师ID
+            uid: '',
+            //教师姓名
+            name: '',
+            //那个角色组
+            group_id: '',
+            rules: {
+                group_id: [{
+                    type: 'array',
+                    required: true,
+                    message: '请选择角色组！',
+                    trigger: 'change'
+                }],
+                account: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请输入用户名！'));
+                        } else {
+                            if (!zz.test(value)) {
+                                callback(new Error('用户名只能是英文大小写字母,下划线，数字'));
+                            }
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                name: [{
+                    required: true,
+                    message: '请填写姓名！',
+                    trigger: 'blur'
+                }],
+                password: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请输入密码！'));
+                        } else {
+                            if (this.form.qrpassword !== '') {
+                                this.$refs['form'].validateField('qrpassword');
+                            }
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                qrpassword: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请再次输入密码！'));
+                        } else if (value !== this.form.password) {
+                            callback(new Error('两次输入密码不一致！'));
+                        } else {
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+            },
+        }
+    },
+    watch: {
+        'dialogFormVisible': function(newvalue, oldvalue) {
+            this.dialogVisible = newvalue
+            if (!newvalue)
+                this.$refs['form'].resetFields();
+        }
+    },
+    methods: {
+        //确定
+        onSubmit() {
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    this.setData()
+                } else {
+                    return false
+                }
+            })
+        },
+        closeDialog() {
+            this.$emit('CB-dialogFormVisible');
+        },
+        //插入数据
+        setData() {
+            this.form.group_id = this.form.group_id.join(",")
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/user/insert',
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.form.group_id = []
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.dialogVisible = false;
+                }
+            }, (error) => {
+                this.form.group_id = []
+                this.$emit('API-ERR')
+            })
+        }
+
+    },
+    computed: {
+        rules_juesezu: function() {
+            return this.$store.state.rules_juesezu
+        }
+    }
+}
+</script>

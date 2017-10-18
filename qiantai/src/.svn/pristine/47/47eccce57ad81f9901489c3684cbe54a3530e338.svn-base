@@ -1,0 +1,69 @@
+<template>
+    <el-col :xs="14" :sm="8" :md="8" :lg="8">
+        <div class="zixun-date">
+            <i class="fa fa-thumbs-o-up" style="cursor:pointer; " :class="dingclass" @click="dingSet(id,2)"></i> 顶 {{ding_count}}　<i class="fa fa-thumbs-o-down" :class="caiclass" style="cursor:pointer" @click="caiSet(id,2)"></i> 踩 {{cai_count}}
+            <!-- <i class="el-icon-star-off"></i> 收藏 0 -->
+        </div>
+    </el-col>
+</template>
+<script>
+export default {
+    props: ['id', 'cai_count', 'ding_count', 'state'],
+    activated() {
+
+    },
+    data() {
+        return {
+            formData: {},
+            dingclass: '',
+            caiclass: ''
+        }
+    },
+    methods: {
+        dingSet(id,val){
+            this.dingclass = "yanse"
+            this.axios({
+                method:'post',
+                url:this.API_ROOT+'/home_api/news/point',
+                data:{
+                    id:id,
+                    top:val
+                }
+            }).then((response)=>{
+                if(response.data.status.code!==1001){
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                }else{
+                    this.$emit('CB_dincai',1)
+                }
+            },(error)=>{
+                this.$emit('APP-ERR')
+            })
+        },
+        caiSet(id,val){
+            this.caiclass = "yanse"
+            this.axios({
+                method:'post',
+                url:this.API_ROOT+'/home_api/news/point',
+                data:{
+                    id:id,
+                    tread:val
+                }
+            }).then((response)=>{
+                if(response.data.status.code!==1001){
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                }else{
+                    this.$emit('CB_dincai',1)
+                }
+            },(error)=>{
+                this.$emit('APP-ERR')
+            })
+        }
+    },
+    computed: {},
+}
+</script>
+<style>
+.yanse {
+    color: red;
+}
+</style>

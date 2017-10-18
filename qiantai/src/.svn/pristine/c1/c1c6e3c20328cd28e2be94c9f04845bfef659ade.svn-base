@@ -1,0 +1,153 @@
+<template>
+    <div class="video-player">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17">
+                    <dl class="zhuanti-list" v-loading="loading" element-loading-text="拼命加载中">
+                        <dt class="margin-bottom-20">
+                            <video-player ref="videoPlayer" :options="playerOptions" @play="onPlayerPlay($event)" @pause="onPlayerPause($event)" @ended="onPlayerEnded($event)" @loadeddata="onPlayerLoadeddata($event)" @waiting="onPlayerWaiting($event)" @playing="onPlayerPlaying($event)" @timeupdate="onPlayerTimeupdate($event)" @canplay="onPlayerCanplay($event)" @canplaythrough="onPlayerCanplaythrough($event)" @ready="playerReadied" @statechanged="playerStateChanged($event)">
+                            </video-player>
+                        </dt>
+                        <dd class="font-140">
+                            {{videoData.title}}
+                        </dd>
+                    </dl>
+                    <tuijianVideo></tuijianVideo>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <!-- 智库专栏 -->
+                        <Index_zkzhuanlan></Index_zkzhuanlan>
+                        <div class="guanggao index-img-big" v-if="guanggao">
+                            <a :href="guanggao.link_url" target="_blank">
+                                <img v-if="!guanggao.img" src="../../assets/img/default.jpg" alt="">
+                                <img v-else :src="guanggao.img" alt="">
+                            </a>
+                            <span class="font-80">广告</span>
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+            <Index_links></Index_links>
+        </div>
+    </div>
+</template>
+<script>
+import Index_links from '@/page/index/links'
+import Index_zkzhuanlan from '@/page/index/zkzhuanlan'
+import tuijianVideo from './tuijianVideo';
+
+export default {
+    activated() {
+            this.getVideo()
+        },
+        data() {
+            return {
+                loading: false,
+                playerOptions: {
+                    // component options
+                    start: 0,
+                    playsinline: false,
+                    // videojs options
+                    muted: true,
+                    language: 'zh-CN',
+                    height: '375px',
+                    playbackRates: [0.7, 1.0, 1.5, 2.0],
+                    sources: [{
+                        type: "video/mp4",
+                        src: "http://osaeqd83t.bkt.clouddn.com/video_20170609_u4wyk8pysx4r5~1.mp4"
+                    }],
+                    poster: "",
+                },
+                videoData: '',
+                guanggao: ''
+            }
+        },
+        methods: {
+            getVideo() {
+                this.loading = true
+                this.axios({
+                    method: 'post',
+                    url: this.API_ROOT + '/home_api/videos/detailsvideos',
+                    data: {
+                        id: this.$route.params.id
+                    }
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.playerOptions.sources[0].src = response.data.data.video_file
+                        this.playerOptions.poster = response.data.data.img
+                        this.videoData = response.data.data;
+                        this.guanggao = response.data.guanggao
+                    }
+                    this.loading = false
+                }, (error) => {
+                    this.loading = false
+                    this.$emit('API-ERR')
+                })
+            },
+            // listen event
+            onPlayerPlay(player) {
+                // console.log('player play!', player)
+            },
+            onPlayerPause(player) {
+                // console.log('player pause!', player)
+            },
+            onPlayerEnded(player) {
+                // console.log('player ended!', player)
+            },
+            onPlayerLoadeddata(player) {
+                // console.log('player Loadeddata!', player)
+            },
+            onPlayerWaiting(player) {
+                // console.log('player Waiting!', player)
+            },
+            onPlayerPlaying(player) {
+                // console.log('player Playing!', player)
+            },
+            onPlayerTimeupdate(player) {
+                // console.log('player Timeupdate!', player.currentTime())
+            },
+            onPlayerCanplay(player) {
+                // console.log('player Canplay!', player)
+            },
+            onPlayerCanplaythrough(player) {
+                // console.log('player Canplaythrough!', player)
+            },
+            // or listen state event
+            playerStateChanged(playerCurrentState) {
+                // console.log('player current update state', playerCurrentState)
+            },
+            // player is ready
+            playerReadied(player) {
+                // console.log('example 01: the player is readied', player)
+            }
+        },
+        components: {
+            tuijianVideo,
+            Index_links,
+            Index_zkzhuanlan
+        }
+}
+</script>
+<style scoped>
+.zhuanti-list {
+    padding-right: 80px;
+}
+
+.zhuanti-list dt {
+    height: 530px;
+    overflow: hidden;
+    border-radius: 5px;
+    position: relative;
+}
+
+.zhuanti-list dt > img {
+    width: 100%;
+}
+
+.zhuanti-list dd {
+    color: #582424;
+}
+</style>

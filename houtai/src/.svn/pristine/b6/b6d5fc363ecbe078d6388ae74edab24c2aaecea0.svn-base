@@ -1,0 +1,78 @@
+<template>
+    <!--添加编辑角色弹框-->
+    <el-dialog title="退回原因" size="tiny" v-model="dialogVisible" @close="handleClose">
+        <el-form label-suffix="：" :model="formData" :rules="rules" ref="formData" :label-width="formLabelWidth">
+            <el-form-item label="退回原因" prop="describe">
+                <el-input v-model="formData.describe" type="textarea" :rows="4" placeholder="请填写退回原因"></el-input>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" :loading="loading" @click="handleKeep('formData')">确认保存</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script type="text/javascript">
+export default {
+    data: function() {
+        return {
+            loading: false,
+            dialogVisible: false,
+            formData: {
+                describe: ''
+            },
+            formLabelWidth: "100px",
+            rules: {
+                describe: [{
+                    required: true,
+                    message: '请填写退回原因',
+                    trigger: 'blur'
+                }]
+            }
+        }
+    },
+    props: ['dialog', 'id'],
+    watch: {
+        'dialog': function(newValue, oldValue) {
+            if (newValue == oldValue) return;
+            this.dialogVisible = newValue;
+            if (this.dialogVisible) {
+                // this.getData()
+            } else {
+                // this.tableData = []
+            }
+        }
+    },
+    methods: {
+        handleClose() {
+            this.$refs['formData'].resetFields();
+            this.$emit('CB-dialog');
+        },
+        //确认保存
+        handleKeep(form) {
+            this.loading = true;
+            this.$refs[form].validate((valid) => {
+                if (valid) {
+                    this.$http.post(this.API_ROOT + '/api/selectlog', {
+                        pid: this.id,
+                        page: this.currentPage,
+                        listRows: this._pageSize,
+                    }, this.$store.getters.Request_Head).then((response) => {
+                        // if (response.data.status.code !== 1001) {
+                        //     this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                        // } else {
+                        //     this.tableData = response.data.data
+                        //     this.total = response.data.count
+                        // }
+                        this.loading = false
+                    }, (error) => {
+                        this.loading = false
+                        this.$emit('API-ERR');
+                    })
+                } else {
+                    this.loading = false;
+                }
+            })
+        },
+    }
+}
+</script>

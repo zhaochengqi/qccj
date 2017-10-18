@@ -1,0 +1,188 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="6">
+                    <el-input placeholder="检索：学生姓名、学号" icon="search" v-model="keys">
+                    </el-input>
+                </el-col>
+                <el-col :md="6" class="pad-lft">
+                    <el-select v-model="old_kequn" placeholder="不限专业课群" clearable @change="handleKequn" style="width:100%">
+                        <el-option v-for="item in kequn_data" :label="item.title" :value="item.id" :key="item.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="12" class="text-right">
+                    <el-button type="warning" icon="share" @click="handleTong">同步数据</el-button>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" border style="width: 100%" @sort-change="handleSort">
+                <el-table-column type="selection" width="50"></el-table-column>
+                <el-table-column prop="name" label="姓 名" min-width="100"></el-table-column>
+                <el-table-column prop="account" label="学 号" min-width="90"></el-table-column>
+                <el-table-column prop="old_kequn" label="专业课群" min-width="180" show-overflow-tooltip>
+                    <template scope="scope">
+                        {{fmtkequn(scope.row.kequn)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="phone" min-width="120" label="手机号码" show-overflow-tooltip>
+                    <template scope="scope">
+                        {{scope.row.phone||'--'}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="email" min-width="160" label="邮箱" show-overflow-tooltip>
+                    <template scope="scope">
+                        {{scope.row.email||'--'}}
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total,sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+    </el-card>
+</template>
+<script>
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    activated: function() {
+        this._order = "account"
+        this._sort = "desc"
+        this.getData()
+    },
+    data() {
+        return {
+            keys: '',
+            total: 0,
+            loading: false,
+            tableData: [],
+            currentPage: 1,
+            _order: '',
+            _sort: '',
+            account: '',
+            old_kequn: ''
+        }
+    },
+    watch: {
+        'keys': function(newValue, oldValue) {
+            if (newValue == oldValue) return;
+            this.keys = newValue;
+            this.getData();
+        }
+    },
+    methods: {
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = "account"
+                this._sort = "asc"
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData()
+        },
+        //筛选课群/方向
+        handleKequn(val) {
+            this.zhuanye = val
+            this.getData()
+        },
+        //同步学生
+        handleTong() {
+            this.$confirm('确定同步数据吗？', '系统提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then((response) => {
+                this.axios({
+                    method: 'post',
+                    url: this.API_ROOT + '/api/stu_local/sync',
+                    headers: this.$store.getters.Request_Head
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.$message({
+                            type: 'success',
+                            message: response.data.data
+                        })
+                        this.getData()
+                    }
+                }, (error) => {
+                    this.$emit('API-ERR')
+                })
+            }).catch(() => {})
+        },
+        //显示页条数
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        //当前页数
+        handleCurrentChange(val) {
+            this.currentPage = val
+            this.getData()
+        },
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/stu_local',
+                data: {
+                    _order: this._order,
+                    _sort: this._sort,
+                    keys: this.keys,
+                    page: this.currentPage,
+                    listRows: this._pageSize,
+                    old_kequn: this.old_kequn
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        },
+        fmtkequn: function(val) {
+            var value;
+            for (var i in this.kequn_data) {
+                if (this.kequn_data[i].id == val) {
+                    return value = this.kequn_data[i].title;
+                }
+            }
+            return value;
+        }
+    },
+    computed: mapState({
+        _pageSize: state => state.pageSize,
+        _pageSizes: state => state.pageSizes,
+        kequn_data: state => state.kequnfangxiang
+
+    })
+}
+</script>
+<style>
+.el-table {
+    font-size: 13px;
+}
+</style>

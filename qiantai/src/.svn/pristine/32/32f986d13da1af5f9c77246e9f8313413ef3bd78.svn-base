@@ -1,0 +1,45 @@
+<template>
+    <div class="guanggao index-img-big" v-if="guanggaoData!=null" v-loading="loading" element-loading-text="拼命加载中">
+        <a :href="guanggaoData.link_url">
+            <img v-else :src="guanggaoData.img+'!335x300'" onerror="javascript:this.src='../assets/img/default.jpg';" alt="">
+        </a>
+        <span class="font-80">广告</span>
+    </div>
+</template>
+<script>
+export default {
+    activated: function() {
+        this.getGuanggao()
+    },
+    props: ['weizhi', 'listRows'],
+    data() {
+        return {
+            guanggaoData: {},
+            loading: false
+        }
+    },
+    methods: {
+        getGuanggao() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/guanggao',
+                data: {
+                    type: this.weizhi,
+                    listRows: this.listRows
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.guanggaoData = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        }
+    }
+}
+</script>

@@ -1,0 +1,117 @@
+<template>
+    <div class="zazhi-yuedu">
+        <div class="container margin-top-50 padding-top-30">
+            <div class="zazhi-yuedu-main">
+                <el-row :gutter="14" v-loading="loading" element-loading-text="拼命加载中">
+                    <el-col :xs="12" :sm="6" :md="6" :lg="6" v-for="item in zazhiData" :key="item" v-if="zazhiData.length>0">
+                        <div class="yuedu-menu">
+                            <div class="yuedu-img">
+                                <router-link :to="{name:'zazhiRead',params:{id:item.id}}">
+                                    <img :src="item.img?item.img+'!228x284':'./static/img/default.jpg'" alt="">
+                                </router-link>
+                            </div>
+                            <a :href="item.pdf_file " class="font-110 ">立即下载</a>
+                        </div>
+                    </el-col>
+                </el-row>
+                <div class="fenye margin-bottom-50 margin-top-50 padding-bottom-50">
+                    <div class="block" v-if="total>0">
+                        <el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-sizes="[10, 20, 30, 40]" :page-size="pageSize" :total="total">
+                        </el-pagination>
+                    </div>
+                </div>
+                <Index_links>此处显示友情链接内容</Index_links>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+//挂载友情链接
+import Index_links from '../index/links'
+
+export default {
+    activated: function() {
+        this.getZazhi()
+    },
+    data() {
+        return {
+            total: 0,
+            currentPage: 1,
+            //设置一页多少条
+            pageSize: 24,
+            loading: false,
+            zazhiData: [],
+
+        };
+    },
+    methods: {
+        //页码发生变化
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getZazhi();
+        },
+        //获取杂志数据
+        getZazhi() {
+            this.loading = true
+            this.axios({
+                data: {
+                    page: this.currentPage,
+                    listRows: this.pageSize,
+                },
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zazhi/zazhi'
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.zazhiData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        }
+    },
+    components: {
+        Index_links
+    }
+}
+</script>
+<style scoped>
+.zazhi-yuedu-main {
+    padding: 0 90px;
+}
+
+.yuedu-img {
+    height: 284px;
+}
+
+.yuedu-menu > a {
+    width: 117px;
+    line-height: 32px;
+    top: -25px;
+}
+
+@media(max-width: 1200px) {
+    .yuedu-img {
+        height: 213px;
+    }
+}
+
+@media(max-width: 992px) {
+    .zazhi-yuedu-main {
+        padding: 0 30px;
+    }
+    .yuedu-img {
+        height: 180px;
+    }
+}
+
+@media(max-width: 768px) {
+    .zazhi-yuedu-main {
+        padding: 0;
+    }
+}
+</style>

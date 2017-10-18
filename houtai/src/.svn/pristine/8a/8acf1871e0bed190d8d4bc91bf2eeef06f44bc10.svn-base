@@ -1,0 +1,404 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="4" :sm="12" class="pad-rgt">
+                    <el-input placeholder="检索：学号、姓名" icon="search" v-model="keys" clearable>
+                    </el-input>
+                </el-col>
+                <el-col :md="4" :sm="12" class="pad-rgt">
+                    <el-select v-model="nianji" placeholder="不限年级" clearable @change="selectNianji" style="width:100%">
+                        <el-option v-for="nj in nianji_data" :label="nj.title" :value="nj.title" :key="nj.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="5" :sm="12" class="pad-rgt">
+                    <el-select v-model="kequn" placeholder="不限专业课群" clearable @change="selectKequn" style="width:100%">
+                        <el-option v-for="kq in kequn_data" :label="kq.title" :value="kq.id" :key="kq.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="4" :sm="12" class="pad-rgt">
+                    <el-select v-model="hz_type" placeholder="不限汇总结果" clearable @change="selectHuizong" style="width:100%">
+                        <el-option v-for="hz in hztype_data" :label="hz.title" :value="hz.id" :key="hz.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="7" :sm="12" class="text-right">
+                    <el-button-group>
+                        <el-button type="primary" icon="document" @click="dialogFormVisible = true">生成数据</el-button>
+                        <el-button type="info" icon="upload" @click="importData">导出数据</el-button>
+                        <el-button type="warning" icon="search" @click="SearchMoreForm = true"></el-button>
+                    </el-button-group>
+                </el-col>
+            </el-row>
+            <!-- 生成数据 -->
+            <el-dialog title="生成培养计划审核数据" v-model="dialogFormVisible">
+                <el-form label-suffix="：" :model="form" :rules="rules" ref="form" :label-width="formLabelWidth">
+                    <el-form-item label="生成数据范围">
+                        <el-radio-group v-model="form.shengcheng">
+                            <el-radio :label="1">生成所有</el-radio>
+                            <el-radio :label="2">指定学生</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                    <el-form-item label="选择培养计划" v-if="form.shengcheng==1" prop="year">
+                        <el-select v-model="form.year" autosize placeholder="请选择培养计划">
+                            <el-option v-for="nj in nianji_data" :label="nj.title" :value="nj.id" :key="nj.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="学号" v-if="form.shengcheng==2" prop="account">
+                        <el-input placeholder="填写需要生成审核数据的学号，多个之间用“,”（半角）隔开" v-model="form.account" clearable>
+                        </el-input>
+                    </el-form-item>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="dialogFormVisible = false">取 消</el-button>
+                    <el-button type="primary" :loading="false" @click="dataAdd('form')">确认生成数据</el-button>
+                </div>
+            </el-dialog>
+            <!--/ 生成数据 -->
+            <!-- 更多搜索条件筛选数据  -->
+            <el-dialog title="筛选学生数据" v-model="SearchMoreForm">
+                <el-form label-suffix="：" :model="SearchStu" :label-width="formLabelWidth">
+                    <el-form-item label="筛选数据类型">
+                        <el-radio-group v-model="SearchStu.type">
+                            <el-radio :label="1">显示未达标的学生</el-radio>
+                            <el-radio :label="2">显示已达标的学生</el-radio>
+                            <el-radio :label="0">所有学生</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                    <!-- <el-form-item label="筛选数据关系">
+                        <el-radio-group v-model="SearchStu.guanxi">
+                            <el-radio :label="1">只要满足任一条件</el-radio>
+                            <el-radio :label="2">需要满足所有条件</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                    <el-form-item label="筛选数据条件">
+                        <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全选</el-checkbox>
+                        <el-checkbox-group v-model="SearchStu.tiaojian" @change="handleCheckedCitiesChange">
+                            <el-checkbox v-for="type in typeArr" :label="type" style="width:30%">{{type}}</el-checkbox>
+                        </el-checkbox-group>
+                    </el-form-item> -->
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="SearchMoreForm = false">关闭</el-button>
+                    <el-button type="primary" @click="jiansuoAdd('form')">立即检索</el-button>
+                </div>
+            </el-dialog>
+            <!--/ 更多搜索条件筛选数据 -->
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe border highlight-current-row style="width: 100%">
+                <el-table-column type="index" width="60" fixed></el-table-column>
+                <el-table-column width="90" prop="name" label="姓名" fixed></el-table-column>
+                <el-table-column min-width="90" prop="account" label="学号" sortable></el-table-column>
+                <el-table-column min-width="90" prop="pyjh" label="培养计划">
+                    <template scope="scope">
+                        {{scope.row.pyjh}} 级
+                    </template>
+                </el-table-column>
+                <!-- 公共基础课 -->
+                <el-table-column label="公共基础课" align="center">
+                    <el-table-column label="必修课学分" min-width="102">
+                        <template scope="scope">
+                            <el-tag :close-transition="true" :type="scope.row.ggjc_bx_y > scope.row.ggjc_bx_s ? 'danger' : 'success'">{{scope.row.ggjc_bx_s}} / {{scope.row.ggjc_bx_y}}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="选修课学分" min-width="102">
+                        <template scope="scope">
+                            <el-tag :close-transition="true" :type="scope.row.ggjc_xx_s>0 ? 'success':'danger'">
+                                <span v-if="scope.row.ggjc_xx_s>0">{{scope.row.ggjc_xx_s}}</span>
+                                <span v-if="scope.row.ggjc_xx_s=='0'">0</span>
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                </el-table-column>
+                <!--/ 公共基础课 -->
+                <!-- 专业基础课 -->
+                <el-table-column label="专业基础课" align="center">
+                    <el-table-column label="必修课学分" min-width="102">
+                        <template scope="scope">
+                            <el-tag :close-transition="true" :type="scope.row.zyjc_bx_y > scope.row.zyjc_bx_s ? 'danger' : 'success'">{{scope.row.zyjc_bx_s}} / {{scope.row.zyjc_bx_y}}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="选修课学分" min-width="102">
+                        <template scope="scope">
+                            <el-tag :close-transition="true" :type="scope.row.zyjc_xx_s>=4 ?  'success':'danger'" v-if="kequn=='14'">
+                                <span v-if="scope.row.zyjc_xx_s>=4">{{scope.row.zyjc_xx_s}}</span>
+                                <span v-if="scope.row.zyjc_xx_s<4&&scope.row.zyjc_xx_s>0">{{scope.row.zyjc_xx_s}}</span>
+                                <span v-if="scope.row.zyjc_xx_s=='0'">0</span>
+                            </el-tag>
+                            <el-tag :close-transition="true" :type="scope.row.zyjc_xx_s>0 ?  'success':'danger'" v-if="kequn!='14'">
+                                <span v-if="scope.row.zyjc_xx_s>0">{{scope.row.zyjc_xx_s}}</span>
+                                <span v-if="scope.row.zyjc_xx_s=='0'">0</span>
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                </el-table-column>
+                <!--/ 专业基础课 -->
+                <!-- 专业课 -->
+                <el-table-column label="专业课" align="center">
+                    <el-table-column label="必修课学分" min-width="102">
+                        <template scope="scope">
+                            <el-tag :close-transition="true" :type="scope.row.zy_bx_y > scope.row.zy_bx_s ? 'danger' : 'success'"> {{scope.row.zy_bx_s}} / {{scope.row.zy_bx_y}}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="选修课学分" min-width="102">
+                        <template scope="scope">
+                            <el-tag :close-transition="true" :type="scope.row.zy_xx_y > scope.row.zy_xx_s ? 'danger' : 'success'"> {{scope.row.zy_xx_s}} / {{scope.row.zy_xx_y}}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                </el-table-column>
+                <!-- /专业课 -->
+                <!-- 实践环节 -->
+                <el-table-column label="实践环节" min-width="102">
+                    <template scope="scope">
+                        <el-tag :close-transition="true" :type="scope.row.sjhj_y > scope.row.sjhj_s ? 'danger' : 'success'"> {{scope.row.sjhj_s}} / {{scope.row.sjhj_y}}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <!-- /实践环节 -->
+                <el-table-column fixed="right" label="汇总结果" width="90">
+                    <template scope="scope">
+                        <span class="text-danger" v-if="scope.row.is_by == '1'"> <i class="el-icon-circle-cross"></i> 肄业</span>
+                        <span class="text-success" v-if="scope.row.is_by == '3'"> <i class="el-icon-circle-check"></i> 毕业</span>
+                        <span class="text-success" v-if="scope.row.is_by == '2'"> 
+                        <i class="el-icon-circle-check"></i>结业</span>
+                        <span vi-if="scope.row.is_by==''">--</span>
+                    </template>
+                </el-table-column>
+                <el-table-column fixed="right" label="操作" width="110">
+                    <template scope="scope">
+                        <el-button size="mini" icon="view" type='primary' @click="handleDetail(scope.row.account)">
+                            查看详情
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total,sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+    </el-card>
+</template>
+<script>
+export default {
+    //切换keep时，触发该方法
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: '',
+            tableData: [],
+            nianji: '',
+            kequn: '',
+            hz_type: '',
+            dialogFormVisible: false,
+            SearchMoreForm: false,
+            form: {
+                shengcheng: 1,
+                year: '',
+                account: ''
+            },
+            checkAll: false,
+            typeArr: ['公共基础必修课', '公共基础选修课', '专业基础必修课', '专业基础选修课', '专业必修课', '专业选修课', '实践环节'],
+            isIndeterminate: false,
+            SearchStu: {
+                type: 1,
+                guanxi: 1,
+                tiaojian: []
+            },
+            formLabelWidth: '125px',
+            rules: {
+                year: [{
+                    type: 'number',
+                    required: true,
+                    message: '请选择培养计划',
+                    trigger: 'blur'
+                }],
+                account: [{
+                    required: true,
+                    message: '请选择数据范围',
+                    trigger: 'blur'
+                }]
+            }
+
+        }
+
+    },
+    watch: {
+        //监听“keys”数据模型变化，当值发生改变时，重新获取一次数据 
+        'keys': function(newValue, oldValue) {
+            if (newValue == oldValue) return;
+            this.keys = newValue;
+            this.getData()
+        }
+    },
+    methods: {
+        jiansuoAdd(form) {
+            this.SearchMoreForm = false
+            this.getData()
+        },
+        //数据添加
+        dataAdd(form) {
+            this.$refs[form].validate((valid) => {
+                if (valid) {
+                    this.$http.post(this.API_ROOT + '/api/pyjh/createpyjh', this.form, {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            "User-Token": this.$store.state.userinfo.token
+                        },
+                        emulateJSON: true
+                    }).then((response) => {
+                        if (response.data.status.code !== 1001) {
+                            this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                        } else {
+                            this.$message({
+                                message: '数据生成成功',
+                                type: "success"
+                            });
+                            if (thi.form.shengcheng == 1) {
+                                this.form = {
+                                    shengcheng: 1,
+                                    year: '',
+                                    account: ''
+                                };
+                            } else {
+                                this.form = {
+                                    shengcheng: 2,
+                                    year: '',
+                                    account: ''
+                                };
+                            }
+                            this.dialogFormVisible = false
+                                // this.getData();
+                        };
+                    }, (error) => {
+                        console.log(error);
+                        this.$message.error('服务器请求失败！');
+                        this.loading = false
+                    });
+                } else {
+                    return false;
+                }
+            })
+        },
+        //当年级下拉菜单值发生改变时，回调此方法
+        selectNianji(val) {
+            this.nianji = val
+            this.getData()
+        },
+        //当专业课群下拉菜单值发生改变时，回调此方法
+        selectKequn(val) {
+            this.kequn = val
+            this.getData()
+        },
+        selectHuizong(val) {
+            this.hz_type = val
+            this.getData()
+        },
+        //查看指定学生的汇总数据 
+        handleDetail(account) {
+            //跳转路由
+            this.$router.push({
+                name: 'StuDetail',
+                params: {
+                    account: account
+                }
+            })
+        },
+        importData() {
+
+        },
+        //显示页条数
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        //监听当前页数
+        handleCurrentChange(val) {
+            this.loading = true;
+            this.currentPage = val;
+            this.getData();
+        },
+        getData() {
+            this.loading = true;
+            //跨域请求，注意此处的跨域接口主域名在config/index.js配置
+            this.$http.post(this.API_ROOT + '/api/stu_pyjh', {
+                keys: this.keys,
+                page: this.currentPage,
+                listRows: this._pageSize,
+                kequn: this.kequn,
+                is_by: this.hz_type,
+                xnj: this.nianji,
+                is_ok: this.SearchStu.type
+            }, this.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.tableData = response.data.data;
+                    this.total = response.data.count;
+                    this.loading = false;
+                }
+            }, (error) => {
+                //发起通知，Layout中监听并作出相应通知
+                this.$emit('API-ERR');
+                this.loading = false
+            });
+        },
+        handleCheckAllChange(event) {
+            this.SearchStu.tiaojian = event.target.checked ? this.typeArr : [];
+            this.isIndeterminate = false;
+        },
+        handleCheckedCitiesChange(value) {
+            let checkedCount = value.length;
+            this.checkAll = checkedCount === this.typeArr.length;
+            this.isIndeterminate = checkedCount > 0 && checkedCount < this.typeArr.length;
+        }
+    },
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        },
+        //专业课群
+        kequn_data: function() {
+            this.datasele = {
+                id: '5',
+                title: '土木工程--所有课群'
+            }
+            this.$store.state.kequnfangxiang.unshift(this.datasele)
+            return this.$store.state.kequnfangxiang
+        },
+        //学生年级
+        nianji_data: function() {
+            return this.$store.state.nianjiList
+        },
+        //汇总结果
+        hztype_data: function() {
+            return this.$store.state.hztype_data
+        }
+    }
+}
+</script>
+<style>
+.el-checkbox+.el-checkbox {
+    /*margin-right: 15px;*/
+    margin-left: 0px;
+}
+</style>

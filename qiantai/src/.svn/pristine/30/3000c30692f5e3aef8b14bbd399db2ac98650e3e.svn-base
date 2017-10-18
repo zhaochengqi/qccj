@@ -1,0 +1,247 @@
+import Vue from 'vue'
+import Router from 'vue-router'
+import store from '@/store.js'
+/**======================= 开始引用相关页面组件 ==========================*/
+//我的面板，默认主页
+import Page404 from '@/page/404'
+import Layout from '@/page/public/layout'
+import index from '@/page/index'
+//资讯管理
+import News_index from '@/page/news/index'
+// 新闻详情页
+import News_details from '@/page/news/inner'
+// 个人文章详情页
+import Geren_details from '@/page/zhiku/detail'
+//智库专家
+import Zhuanjia from '@/page/zhiku/zhuanjia'
+//智库专栏
+import Zhuanlan from '@/page/zhuanlan'
+//作者个人
+import Zuozhe_geren from '@/page/zhiku/author'
+//精彩专题
+import Zhuanti from '@/page/zhuanti/index'
+//视频列表页
+import Shipin from '@/page/shipin'
+//视频播放页
+import Bofag from '@/page/shipin/bofang'
+//联系我们
+import Lianxi from '@/page/lianxi'
+//杂志阅读
+import Zazhi_index from '@/page/zazhi/index'
+//单页下载
+import Zazhi_read from '@/page/zazhi/read'
+/**======================= 结束引用相关页面组件 ==========================*/
+Vue.use(Router)
+const router = new Router({
+    //设置全局路由点击之后添加的类名
+    linkActiveClass: 'active-link',
+    mode: 'history',
+    //配置路由所在项目中的子目录，默认为“/”
+    // base: '/qccj/page/',
+    routes: [{
+        //当无法找到匹配的路由时，显示 404
+        path: '*',
+        meta: {
+            pagename: '404 错误！'
+        },
+        component: Page404,
+    }, {
+        //默认重定向至“我的面板”页面
+        path: '/',
+        redirect: {
+            name: 'home'
+        }
+    }, {
+        //主界面布局路由
+        name: 'app',
+        path: '/',
+        meta: {
+            pagename: '主页'
+        },
+        component: Layout,
+        children: [{
+            name: 'home',
+            path: 'index',
+            meta: {
+                pagename: '首页'
+            },
+            component: index
+        }, {
+            //新闻资讯管理
+            name: 'news',
+            meta: {
+                pagename: '资讯',
+                tid: 1
+            },
+            path: 'news',
+            component: News_index
+        }, {
+            //创谷信息管理
+            name: 'chuanggu',
+            meta: {
+                pagename: '创谷信息管理',
+                tid: 2
+            },
+            path: 'chuanggu',
+            component: News_index
+        }, {
+            //创说信息管理
+            name: 'chuangshuo',
+            meta: {
+                pagename: '创说信息管理',
+                tid: 3
+            },
+            path: 'chuangshuo',
+            component: News_index
+        }, {
+            //创业导师
+            name: 'daoshi',
+            meta: {
+                pagename: '创业导师信息',
+                cid: 30
+            },
+            path: 'daoshi',
+            component: Zhuanjia
+        }, {
+            //专家
+            name: 'zhuanjia',
+            meta: {
+                pagename: '专家',
+                cid: 31
+            },
+            path: 'zhuanjia',
+            component: Zhuanjia
+        }, {
+            //新闻详情页
+            name: 'details',
+            meta: {
+                pagename: '新闻详情'
+            },
+            path: 'details-:id',
+            component: News_details
+        }, {
+            //个人文章详情页
+            name: 'geren_details',
+            meta: {
+                pagename: '个人文章详情'
+            },
+            path: 'author-details-:id',
+            component: Geren_details
+        }, {
+            //精彩专题
+            name: 'Zhuanti',
+            meta: {
+                pagename: '精彩专题'
+            },
+            path: 'zhuanti',
+            component: Zhuanti
+        }, {
+            //视频列表页
+            name: 'shipin',
+            meta: {
+                pagename: '视频列表'
+            },
+            path: 'videos',
+            component: Shipin
+        }, {
+            //精彩专栏
+            name: 'zhuanlan',
+            meta: {
+                pagename: '智库专栏'
+            },
+            path: 'zhuanlan',
+            component: Zhuanlan
+        }, {
+            //作者个人
+            name: 'zuozhe_geren',
+            meta: {
+                pagename: '作者个人'
+            },
+            path: 'author-:id',
+            component: Zuozhe_geren
+        }, {
+            //联系我们
+            name: 'lianxi',
+            meta: {
+                pagename: '联系我们',
+                id: 2
+            },
+            path: 'contact-us',
+            component: Lianxi
+        }, {
+            //联系我们
+            name: 'guanyu',
+            meta: {
+                pagename: '关于我们',
+                id: 1
+            },
+            path: 'about-us',
+            component: Lianxi
+        }, {
+            //联系我们
+            name: 'baoliao',
+            meta: {
+                pagename: '新闻爆料',
+                id: 3
+            },
+            path: 'baoliao',
+            component: Lianxi
+        }, {
+            //联系我们
+            name: 'jiaru',
+            meta: {
+                pagename: '加入我们',
+                id: 4
+            },
+            path: 'join-us',
+            component: Lianxi
+        }, {
+            //杂志阅读
+            name: 'zazhi',
+            meta: {
+                pagename: '杂志阅读'
+            },
+            path: 'zazhi',
+            component: Zazhi_index
+        }, {
+            //单页下载
+            name: 'zazhiRead',
+            meta: {
+                pagename: '杂志下载'
+            },
+            path: 'zazhi-read-:id',
+            component: Zazhi_read
+        }, {
+            //视频播放页
+            name: 'bofang',
+            meta: {
+                pagename: '视频播放'
+            },
+            path: 'player-:id',
+            component: Bofag
+        }]
+    }],
+    //当开启history模式时，此项有效，实现返回上一个页面时默认将滚动条定位到原位置
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) {
+            return savedPosition
+        } else {
+            return {
+                x: 0,
+                y: 0
+            }
+        }
+    }
+})
+
+// // 全局配置
+router.beforeEach((to, from, next) => {
+    next()
+        // Change doc title
+
+})
+
+
+
+
+export default router

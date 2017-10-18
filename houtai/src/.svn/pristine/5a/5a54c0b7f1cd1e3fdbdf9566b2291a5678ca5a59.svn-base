@@ -1,0 +1,185 @@
+<template>
+    <el-dialog title="请选择头像" :visible.sync="dialogVisible" size="tiny" :before-close="handleClose">
+        <div class="morenF">
+            <div class="morenTitle text-mint"> 默认头像 </div>
+            <img class="img-md mar-rgt" src="../../assets/img/profile-photos/1.png" @click="xuanzeImg(1)" alt="">
+            <img class="img-md mar-rgt" src="../../assets/img/profile-photos/2.png" @click="xuanzeImg(2)" alt="">
+            <img class="img-md mar-rgt" src="../../assets/img/profile-photos/3.png" @click="xuanzeImg(3)" alt="">
+            <img class="img-md mar-rgt" src="../../assets/img/profile-photos/4.png" @click="xuanzeImg(4)" alt="">
+            <img class="img-md" src="../../assets/img/profile-photos/5.png" @click="xuanzeImg(5)" alt="">
+            <div class="brTop"></div>
+            <img class="img-md mar-rgt" src="../../assets/img/profile-photos/6.png" @click="xuanzeImg(6)" alt="">
+            <img class="img-md mar-rgt" src="../../assets/img/profile-photos/7.png" @click="xuanzeImg(7)" alt="">
+            <img class="img-md mar-rgt" src="../../assets/img/profile-photos/8.png" @click="xuanzeImg(8)" alt="">
+            <img class="img-md mar-rgt" src="../../assets/img/profile-photos/9.png" @click="xuanzeImg(9)" alt="">
+            <img class="img-md " src="../../assets/img/profile-photos/10.png" @click="xuanzeImg(10)" alt="">
+        </div>
+        <el-row class="zidiF text-primary">
+            <el-col :span="10">
+                <div class="morenTitle"> 自定义头像 </div>
+                <QNUpload max_file_size="500kb" button_text='上传头像' :filters='filters' @Callback-UploadProgress="CB_UploadProgress" @Callback-GetFileUrl="CB_GetFileUrl" @Callback-Error="CB_Error"></QNUpload>
+            </el-col>
+            <el-col :span="14">
+                <span v-if="img" class="Info-Img">
+                    <img :src="img" alt="" class="img-md" >
+                    <span class="el-icon-circle-cross"  @click="rmImage">
+                    </span>
+                </span>
+            </el-col>
+        </el-row>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="dialogVisible = false">确 定</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+import QNUpload from '@/components/qiniu-upload'
+export default {
+    props: ['dialogVisibles'],
+    data() {
+        return {
+            dialogVisible: false,
+            //上传格式
+            filters: {
+                mime_types: [{
+                    title: "Image Files",
+                    extensions: "jpg,png,bmp,jpeg"
+                }]
+            },
+            img: ''
+        }
+    },
+    watch: {
+        dialogVisibles(newValue, oldValue) {
+            if (newValue == oldValue) return;
+            this.dialogVisible = newValue;
+        }
+    },
+    methods: {
+        //点击删除图片
+        rmImage() {
+            this.$confirm('确定要移除图片吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.img = ''
+            }).catch(() => {});
+        },
+        //离开此页面
+        handleClose() {
+            console.log(this.img)
+            this.$emit('Cb-ImgDialog', this.img)
+        },
+        //设置默认图片
+        xuanzeImg(val) {
+            this.$confirm('确定将此图设为默认头像吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.img = this.InfoImgArr[val - 1];
+                console.log(this.img)
+            }).catch(() => {});
+        },
+        /**
+         * [回调处理七牛上传相关数据]
+         * 其他更多回调方法参考 七牛组件
+         */
+        //文件上传过程，主要用于展现上传进度
+        CB_UploadProgress(file) {},
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl(file) {
+            this.$message({
+                message: '图片上传成功',
+                type: 'success'
+            });
+            this.img = file.split('!')[0]
+            console.log(this.img)
+        },
+
+        //获取上传错误信息
+        CB_Error(err, info) {
+            if (err.code == -600) {
+                this.$message({
+                    message: '图片最大上传大小不能超过500KB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '图片上传错误！',
+                    type: 'warning'
+                });
+            }
+        }
+    },
+    computed: {
+        InfoImgArr() {
+            return this.$store.state.InfoImgArr
+        }
+    },
+    components: {
+        QNUpload
+    }
+}
+</script>
+<style>
+.brTop {
+    margin-top: 20px;
+}
+
+.morenF {
+    width: 400px;
+    margin-top: -20px;
+    margin-left: -5px;
+}
+
+.morenF>img:hover {
+    cursor: pointer;
+    box-shadow: 0px 0px 3px #1D8CE0;
+}
+
+.zidiF {
+    margin-top: 20px;
+}
+
+.morenTitle {
+    height: 30px;
+    line-height: 30px;
+    margin-bottom: 10px;
+}
+
+.morenF> img,
+.Info-Img>img {
+    background: #E5E5E5;
+    padding: 4px;
+}
+
+.Info-Img {
+    width: 64px;
+    height: 64px;
+    position: relative;
+    cursor: pointer;
+}
+
+.Info-Img>img:hover {
+    box-shadow: 0px 0px 3px #1D8CE0;
+}
+
+.Info-Img>span {
+    background: white;
+    position: absolute;
+    right: 0px;
+}
+
+.Info-Img>span:hover {
+    color: #FF4949;
+    cursor: pointer;
+}
+</style>

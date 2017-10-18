@@ -1,0 +1,171 @@
+<template>
+    <el-dialog :title="title" v-model="dialogFormVisible" close-on-press-escape @close="cleardialog">
+        <el-form :model="form" label-width="120px" ref="form" :rules="rules">
+            <el-row>
+                <el-form-item label="广告名称" required prop="guanggao_name">
+                    <el-col :md="16">
+                        <el-input v-model="form.guanggao_name" placeholder="请填写广告名称，必填项"></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="类型" required prop="type">
+                    <el-col :md="16">
+                        <el-select v-model="form.type" filterable clearable @change="ztSelect" allow-create placeholder="填写类型 " style="width:100%">
+                            <el-option v-for="item in ztbiaoqian" :key="item.id" :label="item.title" :value="item.title">
+                            </el-option>
+                        </el-select>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="链接地址" required prop="link_url">
+                    <el-col :md="16">
+                        <el-input v-model="form.link_url" placeholder="请填写友情链接地址，必填项">
+                            <template slot="prepend">http://</template>
+                        </el-input>
+                    </el-col>
+                </el-form-item>
+            </el-row>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="saveData('form')" v-if="authCheck(95) || authCheck(97)" :loading="loadingbiao">确认保存</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    props: ['dialogStatus', 'ljid'],
+    data() {
+        return {
+            loadingbiao: false,
+            dialogFormVisible: false,
+            form: {
+                guanggao_name: '',
+                type: '',
+                link_url:'',
+                sort:'',
+            },
+            title:'添加广告信息管理',
+            rules: {
+                guanggao_name: [{
+                    required: true,
+                    message: '请填写广告名称！',
+                    trigger: 'blur'
+                }],
+                type: [{
+                    required: true,
+                    message: '请填写类型！',
+                    trigger: 'blur'
+                }],
+                link_url: [{
+                    required: true,
+                    message: '请填写链接地址！',
+                    trigger: 'blur'
+                }],
+            }
+
+        }
+    },
+    watch: {
+        dialogStatus(newValue) {
+            this.dialogFormVisible = newValue
+        },
+        'ljid':function(newValue,oldValue){
+            if(newValue==oldValue||newValue=='') return
+            if(newValue){
+                this.title ='编辑广告信息管理'
+                this.getData()
+            }
+        }
+    },
+    methods: {
+        ztSelect(val) {
+            if (val)
+                val = val.trim();
+            if (!val) return;
+            let jishu = 0;
+            for (var i in this.ztbiaoqian) {
+                if (val == this.ztbiaoqian[i])
+                    jishu++
+            }
+            if (!jishu) this.$store.commit('setZtbiaoqian', val)
+        },
+        cleardialog() {
+            this.form={
+                link_name: '',
+                link_url: '',
+                sort:''
+            }
+            if(this.ljid)this.title='添加广告信息管理'
+            this.$emit('CB-dialogStatus')
+        },
+        //保存数据
+        saveData(){
+            this.loadingbiao = true;
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    this.setData();
+                } else {
+                    this.loadingbiao = false
+                    return false;
+                }
+            });
+        },
+        //处理数据
+        setData(form) {
+            var url
+            if (this.ljid) {
+                url = this.API_ROOT + '/api/guanggao/update';
+            } else {
+                url = this.API_ROOT + '/api/guanggao/insert';
+            }
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                 this.dialogFormVisible=false
+                }
+                this.loadingbiao = false
+            }, (error) => {
+                this.loadingbiao = false
+                this.$emit('API-ERR');
+            })
+
+        },
+       //编辑页面进来
+        getData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/guanggao/read',
+                data: {
+                    id:this.ljid
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                }
+                this.loadingbiao = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loadingbiao = false
+            })
+        },
+
+    },
+    //计算属性
+    computed: mapState({
+        ztbiaoqian: state => state.ztbiaoqian,
+
+    })
+}
+</script>

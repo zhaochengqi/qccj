@@ -1,0 +1,304 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row :style="{ 'min-height': _PageHeight+30+'px'}">
+            <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+                <!-- 注意：增加rules验证 -->
+                <el-form-item label="专题名称" prop="title">
+                    <el-col :md="16">
+                        <el-input v-model="form.title" placeholder="请填写精彩专题名称 "></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item prop="label" label="专题标签">
+                    <el-col :md="8">
+                        <el-select v-model="form.label" filterable clearable @change="ztSelect" allow-create placeholder="填写专题标签 " style="width:100%">
+                            <el-option v-for="(item,index) in ztbiaoqian" :key="index" :label="item" :value="item">
+                            </el-option>
+                        </el-select>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="专题图片" required>
+                    <el-col :md="12">
+                        <QN_upload max_file_size="500kb" type="drag" :filters="filters" @Callback-UploadProgress="CB_UploadProgress" @Callback-GetFileUrl="CB_GetFileUrl" @Callback-Error="CB_Error"></QN_upload>
+                        <div class="el-upload__tip" style="line-height:25px">
+                            比例为4 : 3 ，上传jpg/png/bmp格式图片，大小不能超过500KB
+                        </div>
+                    </el-col>
+                    <el-col :md="12">
+                        <el-progress type="circle" :percentage="qn_upload.img_upload_progress" :status='qn_upload.img_upload_status' v-if="qn_upload.img_upload_progress>0"></el-progress>
+                        <span v-else-if="form.img" class="newsImage">
+                            <img :src="form.img" alt="" class="thumbnail" style="max-width:255px;max-height:200px">
+                            <span class="badge"  @click="rmImage">
+                                 <i class="fa fa-close"></i>
+                            </span>
+                        </span>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="专题导读">
+                    <el-input type="textarea" :maxlength='ddmaxlength' :autosize="{ minRows: 2, maxRows: 4}" placeholder="填写精彩专题导读内容，100字以内，尽量简洁明了，一般用于显示到专题列表中" v-model="form.daodu"></el-input>
+                </el-form-item>
+                <el-form-item label="链接地址" prop="link">
+                    <el-col :md="16">
+                        <el-input placeholder="请填写专题链接地址" v-model="form.link">
+                            <template slot="prepend">http://</template>
+                        </el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" v-if="authCheck(84)" size="large" :loading="vloading" @click="onSubmit">保存精彩专题</el-button>
+                    <el-button type="primary" v-else-if="authCheck(86)" size="large" :loading="vloading" @click="onSubmit">保存精彩专题</el-button>
+                </el-form-item>
+            </el-form>
+        </el-row>
+    </el-card>
+</template>
+<script>
+import Vue from 'vue'
+
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+import QN_upload from '@/components/qiniu-upload'
+import goBack from '@/components/goBack'
+
+export default {
+    activated: function() {
+        if (this.$route.params.id) {
+            this.getRead()
+        }
+    },
+    deactivated() {
+        this.$refs['form'].resetFields();
+        this.form = {
+            title: '',
+            label: '',
+            daodu: '',
+            link: '',
+            img: '',
+            pid: 17,
+            img: ''
+        }
+    },
+    data() {
+        return {
+            ddmaxlength: 100,
+            loading: false,
+            form: {
+                title: '',
+                label: '',
+                daodu: '',
+                link: '',
+                img: '',
+                pid: 17,
+                img: ''
+            },
+            qn_upload: {
+                img_upload_progress: 0,
+                img_upload_status: ''
+            },
+            vloading: false,
+            fujiContain: 'voContainer',
+            browse_button: 'container',
+            time: '',
+            maxfile: '500kb',
+            chunk_size: '2mb',
+            rules: {
+                title: [{
+                    required: true,
+                    message: '请填写专题名称',
+                    trigger: 'blur'
+                }],
+                label: [{
+                    required: true,
+                    message: '请输入专题标签',
+                    trigger: 'change,blur'
+                }],
+                link: [{
+                    required: true,
+                    message: '请填写专题链接地址',
+                    trigger: 'blur'
+                }],
+                daodu: [{
+                    required: true,
+                    message: '请填写专题导读',
+                    trigger: 'blur'
+                }, {
+                    min: 0,
+                    max: 100,
+                    message: '字数要求在100以内',
+                    trigger: 'blur'
+                }]
+            },
+            filters: {
+                mime_types: [{
+                    title: "Image files",
+                    extensions: "jpg,png,bmp,jpeg"
+                }]
+            }
+        }
+    },
+    methods: {
+        ztSelect(val) {
+            if (val)
+                val = val.trim();
+            if (!val) return;
+            let jishu = 0;
+            for (var i in this.ztbiaoqian) {
+                if (val == this.ztbiaoqian[i])
+                    jishu++
+            }
+            if (!jishu) this.$store.commit('setZtbiaoqian', val)
+        },
+        onSubmit() {
+            this.vloading = true;
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    this.setData();
+                } else {
+                    this.vloading = false
+                    return false;
+                }
+            });
+        },
+        CB_Content(content, token) {
+            this.form.content = content
+        },
+        timeChange(value) {
+            this.time = value
+        },
+        //点击删除图片
+        rmImage() {
+            this.$confirm('确定要移除图片吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.form.img = ''
+            }).catch(() => {});
+        },
+        //处理数据
+        setData() {
+            this.vloading = true
+            if (this.form.img == '') {
+                this.$message.error('请上传专题图片')
+                this.vloading = false
+                return
+            }
+            var url
+            if (this.$route.params.id) {
+                url = this.API_ROOT + '/api/zhuanti/update'
+            } else {
+                url = this.API_ROOT + '/api/zhuanti/insert'
+            }
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$router.go(-1)
+                    this.form = {
+                        title: '',
+                        label: '',
+                        daodu: '',
+                        link: '',
+                        img: '',
+                        pid: 17,
+                        img: ''
+                    }
+                }
+                this.vloading = false
+            }, (error) => {
+                this.vloading = false
+                this.$emit('API-ERR');
+            })
+        },
+        //编辑页面进来
+        getRead() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/zhuanti/read',
+                data: {
+                    id: this.$route.params.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loading = false
+            })
+        },
+        /**
+         * [回调处理七牛上传相关数据]
+         * 其他更多回调方法参考 七牛组件
+         */
+        //文件上传过程，主要用于展现上传进度
+        CB_UploadProgress(file) {
+            this.qn_upload.img_upload_status = ''
+            this.qn_upload.img_upload_progress = file.percent
+            if (file.percent == 100) {
+                this.qn_upload.img_upload_status = 'success'
+            }
+        },
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl(file) {
+            this.$message({
+                type: 'success',
+                message: '图片上传成功'
+            })
+            this.qn_upload.img_upload_progress = 0
+            this.qn_upload.img_upload_status = ''
+            this.form.img = file
+        },
+
+        //获取上传错误信息
+        CB_Error(err, info) {
+            this.qn_upload.img_upload_status = 'exception'
+            if (err.code == -600) {
+                this.$message({
+                    message: '图片最大上传大小不能超过500kb！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '图片上传错误！',
+                    type: 'warning'
+                });
+            }
+        }
+    },
+    //计算属性
+    computed: mapState({
+        ztbiaoqian: state => state.ztbiaoqian,
+
+    }),
+    //注意别忘记挂载组件
+    components: {
+        QN_upload,
+        goBack
+    }
+}
+</script>

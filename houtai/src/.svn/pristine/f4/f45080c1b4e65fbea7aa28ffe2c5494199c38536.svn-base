@@ -1,0 +1,126 @@
+<template>
+    <header id="navbar">
+        <div id="navbar-container" class="boxed">
+            <!--Brand logo & name-->
+            <!--================================-->
+            <div class="navbar-header">
+                <router-link :to="{name:'home'}" class="navbar-brand">
+                    <!-- <img src="../../assets/img/logo.png" alt="Nifty Logo" class="brand-icon" width="23"> -->
+                    <div class="brand-title">
+                        <span class="brand-text">汽车财经网-管理后台</span>
+                    </div>
+                </router-link>
+            </div>
+            <!--================================-->
+            <!--End brand logo & name-->
+            <!--Navbar Dropdown-->
+            <!--================================-->
+            <div class="navbar-content clearfix">
+                <ul class="nav navbar-top-links pull-left">
+                    <li class="tgl-menu-btn">
+                        <a class="mainnav-toggle" href="#">
+                            <i class="demo-pli-view-list"></i>
+                        </a>
+                    </li>
+                </ul>
+                <ul class="nav navbar-top-links pull-right">
+                    <!--User dropdown-->
+                    <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+                    <li>
+                        <a>
+                            <div class="white username hidden-xs" style="line-height: 40px;padding: 0px 5px;">
+                                角色：{{group_title}}
+                            </div>
+                        </a>
+                    </li>
+                    <li id="dropdown-user" class="dropdown">
+                        <a href="#" data-toggle="dropdown" class="dropdown-toggle text-right">
+                            <span class="pull-right">
+                                    <!--<img class="img-circle img-user media-object" src="static/img/profile-photos/1.png" alt="Profile Picture">-->
+                                <i class="demo-pli-male ic-user"></i> 
+                                <div class="username hidden-xs">
+                                    {{userinfo.nickname}}（{{userinfo.account}}）
+                                </div> 
+                            </span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-md dropdown-menu-right panel-default">
+                            <!-- User dropdown menu -->
+                            <!-- Dropdown footer -->
+                            <div class="pad-all text-right">
+                                <a class="btn btn-primary" @click="logout">
+                                    <i class="demo-pli-unlock"></i> 退出登录
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                    <!-- <li>
+                        <a href="#" class="aside-toggle navbar-aside-icon">
+                            <i class="pci-ver-dots"></i>
+                        </a>
+                    </li> -->
+                </ul>
+            </div>
+            <!--================================-->
+            <!--End Navbar Dropdown-->
+        </div>
+    </header>
+</template>
+<script>
+export default {
+    created: function() {
+        this.getGroup()
+    },
+    data() {
+        return {
+            group_title: ''
+        }
+    },
+    methods: {
+        getGroup() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/Authgroup/getinfo',
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.group_title = response.data.data.group_title
+                }
+            }, (error) => {
+                this.$notify.error({
+                    title: '啊哦，出错咯！',
+                    message: '接口请求失败，赶紧联系工程师抢修吧~',
+                    duration: 0,
+                    offset: 5
+                })
+            })
+        },
+        //退出登录，逻辑处理完后，跳转至登录页面
+        logout() {
+            let json = {
+                userinfo: {},
+                rules: []
+            }
+            this.$store.commit('setUserinfo', json);
+            this.$store.commit('setSliderNav', []);
+
+            //判断当前运行环境模式，如果是开发环境则跳转至本系统登录页面，否则跳转至服务端统一入口
+            if (process.env.NODE_ENV == 'development') {
+                this.$router.push({
+                    name: 'login'
+                })
+            } else {
+                window.location.href = process.env.TMPT_ROOT
+            }
+
+        },
+
+    },
+    computed: {
+        userinfo: function() {
+            return this.$store.state.userinfo.userinfo
+        }
+    }
+}
+</script>

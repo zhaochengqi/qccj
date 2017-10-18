@@ -1,0 +1,62 @@
+<template>
+    <el-dialog v-model="dialogFormVisible" v-loading="loading" element-loading-text="拼命加载中" top="8%" close-on-press-escape @close="clearDialog">
+        <el-row>
+            <el-col :span="24" justify="center">
+                <div class="text-bold font-130 text-center">{{form.title}}</div>
+            </el-col>
+            <el-col :span="24" class="margin-top-40">
+                <span v-html="form.content"></span>
+            </el-col>
+        </el-row>
+    </el-dialog>
+</template>
+<script>
+export default {
+    props: ['dialogStatus', 'tgid'],
+    data() {
+        return {
+            loading: false,
+            form: {},
+            dialogFormVisible: false
+        }
+    },
+    watch: {
+        dialogStatus(newValue) {
+            this.dialogFormVisible = newValue
+        },
+        tgid(newValue) {
+            this.tgid = newValue
+            this.getRead()
+        }
+    },
+    methods: {
+        getRead() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/notice/read',
+                data: {
+                    id: this.$route.params.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    if (response.data.status.code == 1004 || response.data.status.code !== 1006) {
+                        this.lockout()
+                    }
+                } else {
+                    this.form = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API_ERR')
+            })
+        },
+        clearDialog() {
+            this.$emit('CB-dialogStatus', false)
+        }
+    }
+}
+</script>

@@ -1,0 +1,62 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div class="margin-bottom-10"><i class="fa fa-map-signs"></i> &nbsp;&nbsp;<span class="text-danger"> 该数据同步于“培养计划管理系统”，如需更改，请至培养计划管理系统进行更改！ </span></div>
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="24" class="font-120 padding-5">
+                    培养计划：<span class="text-danger">{{year}}级</span>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe highlight-current-row border style="width: 100%">
+                <el-table-column type="index" width="50"></el-table-column>
+                <el-table-column prop="title" label="专业课群" min-width="260"></el-table-column>
+                <el-table-column label="培养计划课程" min-width="430">
+                    <template scope="scope">
+                        <span v-html="scope.row.count"></span>
+                        <router-link :to="{name:'kecheng',params:{kequn:scope.row.id,year:year}}" v-if="scope.row.button">
+                            <el-button type="text">【管理课程】</el-button>
+                        </router-link>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+    </el-card>
+</template>
+<script>
+export default {
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            loading: false,
+            tableData: [],
+            year: ''
+        }
+    },
+    methods: {
+        //请求数据
+        getData() {
+            this.axios({
+                methods: 'post',
+                url: this.API_ROOT + '/api/pyjh/kequnlist',
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.status.title);
+                } else {
+                    this.tableData = response.data.data.list
+                    this.year = response.data.data.pyjh
+                };
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+
+            });
+        }
+    }
+}
+</script>

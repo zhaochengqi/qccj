@@ -1,0 +1,252 @@
+<template>
+    <el-dialog :title="title" v-model="dialogFormVisible" close-on-press-escape @close="cleardialog">
+        <el-form :model="form" label-width="120px" ref="form" :rules="rules">
+            <el-row>
+                <el-form-item label="广告投放位" required prop="type">
+                    <el-col :md="16">
+                        <el-select v-model="form.type" multiple filterable clearable allow-create placeholder="请选择广告投放位置 " style="width:100%">
+                            <el-option v-for="(item,index) in guanggao_weizhi_data" :key="index" :label="item" :value="item">
+                            </el-option>
+                        </el-select>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="广告名称" required prop="name">
+                    <el-col :md="16">
+                        <el-input v-model="form.name" placeholder="请填写广告名称，必填项"></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="广告图片" required>
+                    <el-row>
+                        <el-col :md="17" class="pad-rgt">
+                            <QN_upload max_file_size="500kb" type="drag" :filters="filters" @Callback-UploadProgress="CB_UploadProgress" @Callback-GetFileUrl="CB_GetFileUrl" @Callback-Error="CB_Error"></QN_upload>
+                        </el-col>
+                        <el-col :md="7" class="pad-rgt">
+                            <el-progress type="circle" :percentage="qn_upload.img_upload_progress" :status='qn_upload.img_upload_status' v-if="qn_upload.img_upload_progress>0&&qn_upload.img_upload_progress<100"></el-progress>
+                            <span v-else-if="form.img!=''" class="newsImage">
+                            <img :src="form.img" alt="" class="thumbnail" style="max-width:205px;max-height:100px">
+                            <span class="el-icon-circle-cross"  @click="rmImage">
+                            </span>
+                            </span>
+                        </el-col>
+                    </el-row>
+                </el-form-item>
+                <el-form-item label="链接地址" required prop="link_url">
+                    <el-col :md="16">
+                        <el-input v-model="form.link_url" placeholder="请填写友情链接地址，必填项">
+                            <template slot="prepend">http://</template>
+                        </el-input>
+                    </el-col>
+                </el-form-item>
+            </el-row>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="saveData('form')" v-if="authCheck(95) || authCheck(97)" :loading="loadingbiao">确认保存</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+//导入vuex辅助函数
+import QN_upload from '@/components/qiniu-upload'
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    props: ['dialogStatus', 'ljid'],
+    data() {
+        return {
+            loadingbiao: false,
+            dialogFormVisible: false,
+            form: {
+                name: '',
+                link_url: '',
+                type: [],
+                img: ''
+            },
+            qn_upload: {
+                img_upload_progress: 0,
+                img_upload_status: ''
+            },
+            title: '添加广告信息管理',
+            rules: {
+                name: [{
+                    required: true,
+                    message: '请填写广告名称！',
+                    trigger: 'blur'
+                }],
+                link_url: [{
+                    required: true,
+                    message: '请填写链接地址！',
+                    trigger: 'blur'
+                }],
+                type: [{
+                    type: 'array',
+                    required: true,
+                    message: '请选择广告位！',
+                    trigger: 'change'
+                }]
+            },
+            filters: {
+                mime_types: [{
+                    title: "Image files",
+                    extensions: "jpg,png,jpeg"
+                }]
+            }
+
+        }
+    },
+    watch: {
+        dialogStatus(newValue, oldValue) {
+            if (!newValue) {
+                this.$refs['form'].resetFields();
+            }
+            this.dialogFormVisible = newValue
+        },
+        'ljid': function(newValue, oldValue) {
+            if (newValue == oldValue || newValue == '') return
+            if (newValue) {
+                this.title = '编辑广告信息管理'
+                this.getData()
+            }
+        }
+    },
+    methods: {
+        cleardialog() {
+            this.form = {
+                link_name: '',
+                link_url: '',
+                type: [],
+                img: ''
+            }
+            if (this.ljid) this.title = '添加广告信息管理'
+            this.$emit('CB-dialogStatus')
+        },
+        //保存数据
+        saveData() {
+            this.loadingbiao = true;
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    this.setData();
+                } else {
+                    this.loadingbiao = false
+                    return false;
+                }
+            });
+        },
+        //处理数据
+        setData(form) {
+            this.loadingbiao = true
+            if (this.form.img == '') {
+                this.$message.error('请上传广告图片')
+                this.loadingbiao = false
+                return
+            }
+            var url
+            if (this.ljid) {
+                url = this.API_ROOT + '/api/guanggao/update';
+            } else {
+                url = this.API_ROOT + '/api/guanggao/insert';
+            }
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.dialogFormVisible = false
+                }
+                this.loadingbiao = false
+            }, (error) => {
+                this.loadingbiao = false
+                this.$emit('API-ERR');
+            })
+
+        },
+        //编辑页面进来
+        getData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/guanggao/read',
+                data: {
+                    id: this.ljid
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                }
+                this.loadingbiao = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loadingbiao = false
+            })
+        },
+        //点击删除图片
+        rmImage() {
+            this.$confirm('确定要移除图片吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.form.img = ''
+            }).catch(() => {});
+        },
+        /**
+         * [回调处理七牛上传相关数据]
+         * 其他更多回调方法参考 七牛组件
+         */
+        //文件上传过程，主要用于展现上传进度
+        CB_UploadProgress(file) {
+            this.qn_upload.img_upload_status = ''
+            this.qn_upload.img_upload_progress = file.percent
+            if (file.percent == 100) {
+                this.qn_upload.img_upload_status = 'success'
+            }
+        },
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl(file) {
+            this.$message({
+                type: 'success',
+                message: '图片上传成功'
+            })
+            this.form.img = file.split('!')[0]
+        },
+
+        //获取上传错误信息
+        CB_Error(err, info) {
+            this.qn_upload.img_upload_status = 'exception'
+            if (err.code == -600) {
+                this.$message({
+                    message: '图片最大上传大小不能超过500KB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '图片上传错误！',
+                    type: 'warning'
+                });
+            }
+        }
+
+    },
+    //计算属性
+    computed: mapState({
+        guanggao_weizhi_data: state => state.ggbiaoqian,
+
+    }),
+    //注意别忘记挂载组件
+    components: {
+        QN_upload
+    }
+}
+</script>

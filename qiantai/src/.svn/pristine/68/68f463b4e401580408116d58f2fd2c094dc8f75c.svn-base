@@ -1,0 +1,81 @@
+<template>
+    <div>
+        <!-- 精彩专题 -->
+        <div class="index-title margin-bottom-40 padding-top-10">
+            <span class="font-150">精彩专题</span>
+            <router-link :to="{name: 'Zhuanti'}" style="border:0" class="pull-right">
+                <i class="el-icon-d-arrow-right"></i>
+            </router-link>
+        </div>
+        <el-row class="margin-bottom-30 padding-bottom-30 border-bottom">
+            <el-col class="margin-bottom-30">
+                <div class="zhuanti-img index-img-big zhuanti-img-first">
+                    <a :href="fzhuanti.link" target="_Blank">
+                        <img :src="fzhuanti.img?fzhuanti.img+'!369x197':'../../assets/img/default.jpg'" alt="">
+                    </a>
+                </div>
+            </el-col>
+            <el-col>
+                <div class="zhuanti-txt">
+                    <h4 class="font-140 no-margin"><a :href="fzhuanti.link" target="_Blank">{{fzhuanti.title}}</a></h4>
+                </div>
+            </el-col>
+        </el-row>
+        <div v-for="item in zhuantiData" :key="item.id">
+            <el-row :gutter="7" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                    <div class="zhuanti-img index-img-big">
+                        <a :href="item.link" target="_Blank">
+                            <img :src="item.img?item.img+'!120x65':'../../assets/img/default.jpg'" alt="">
+                        </a>
+                    </div>
+                </el-col>
+                <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                    <div class="zhuanti-txt">
+                        <h4 class="font-120 no-margin aui-ellipsis-2"><a :href="item.link" target="_Blank">{{item.title}}</a></h4>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+    </div>
+</template>
+<script>
+export default {
+    created: function() {
+        this.getZhuanti()
+    },
+    data() {
+        return {
+            fzhuanti: {},
+            zhuantiData: [],
+            ztData: []
+        }
+
+    },
+    methods: {
+        getZhuanti() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zhuanti',
+                data: {
+                    listRows: 6
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.ztData = response.data.data
+                    this.fzhuanti = response.data.data[0];
+                    this.zhuantiData = response.data.data
+                    this.zhuantiData.splice(0, 1)
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        }
+    }
+}
+</script>

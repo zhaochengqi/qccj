@@ -1,0 +1,389 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row :style="{ 'min-height': _PageHeight+'px'}">
+            <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="120px" class="demo-ruleForm">
+                <el-form-item label="人物图片" required>
+                    <el-col :md="12">
+                        <QN_upload buttonID="uploadimg" keyPrefix="image" max_file_size="500kb" type="drag" :filters="filters" @Callback-UploadProgress="CB_UploadProgress" @Callback-GetFileUrl="CB_GetFileUrl" @Callback-Error="CB_Error"></QN_upload>
+                        <div class="el-upload__tip" style="line-height:25px">
+                            比例为4 : 3 ，上传jpg/png/bmp格式图片，大小不能超过500KB
+                        </div>
+                    </el-col>
+                    <el-col :md="12">
+                        <el-progress type="circle" :percentage="qn_upload.img_upload_progress" :status='qn_upload.img_upload_status' v-if="qn_upload.img_upload_progress>0&&qn_upload.img_upload_progress<100"></el-progress>
+                        <span v-else-if="ruleForm.img" class="newsImage">
+                            <img :src="ruleForm.img" alt="" class="thumbnail" style="max-width:255px;max-height:200px">
+                            <span class="el-icon-circle-cross"  @click="rmImage">
+                            </span>
+                        </span>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="封面图片" required>
+                    <el-col :md="12" id="uploadFm">
+                        <QN_upload max_file_size="500kb" keyPrefix="image" container='uploadFm' drop_element="uploadFm" type="drag" :filters="filters" @Callback-UploadProgress="CBL_UploadProgress" @Callback-GetFileUrl="CBL_GetFileUrl" @Callback-Error="CBL_Error"></QN_upload>
+                        <div class="el-upload__tip" style="line-height:25px">
+                            比例为4 : 3 ，上传jpg/png/bmp格式图片，大小不能超过500KB
+                        </div>
+                    </el-col>
+                    <el-col :md="12">
+                        <el-progress type="circle" :percentage="qn_upload.img_upload_pro" :status='qn_upload.img_upload_sta' v-if="qn_upload.img_upload_pro>0&&qn_upload.img_upload_pro<100"></el-progress>
+                        <span v-else-if="ruleForm.fengmian_img" class="newsImage">
+                            <img :src="ruleForm.fengmian_img" alt="" class="thumbnail" style="max-width:255px;max-height:200px">
+                            <span class="el-icon-circle-cross"  @click="rmImagee">
+                            </span>
+                        </span>
+                    </el-col>
+                </el-form-item>
+                <el-row>
+                    <el-col :md="8">
+                        <el-form-item prop="name" label="姓名">
+                            <el-input v-model="ruleForm.name" placeholder="请填写姓名 "></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8">
+                        <el-form-item label="职位">
+                            <el-input v-model="ruleForm.zhiwei" placeholder="请填写职位名称"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8">
+                        <el-form-item prop="cid" label="人物类型">
+                            <el-select style="width:100%;" multiple v-model="ruleForm.cid" clearable placeholder="请选择人物类型">
+                                <el-option v-for="item in zkleixing" :label="item.title" :value="item.id" :key="item.id"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-form-item prop="scly" label="擅长领域">
+                    <el-input v-model="ruleForm.scly" :maxlength='lymaxlength' placeholder="请填写擅长的领域，50个字数以内"></el-input>
+                </el-form-item>
+                <el-form-item prop="jianshu" label="个人简述">
+                    <el-input v-model="ruleForm.jianshu" :maxlength='jsmaxlength' placeholder="请填写个人简述，80个字数以内"></el-input>
+                </el-form-item>
+                <el-form-item label="人物介绍" prop="content">
+                    <vueEditor :editContent="ruleForm.content" :height="200" @Callback-Content="CB_Content"></vueEditor>
+                </el-form-item>
+                <el-form-item>
+                    <el-button size="large" type="primary" v-if="authCheck(91)||authCheck(92)" @click="submitForm('ruleForm')" :loading="loadingbiao"> 保存智库信息 </el-button>
+                    <el-button size="large" @click="resetForm('ruleForm')">重置</el-button>
+                </el-form-item>
+            </el-form>
+        </el-row>
+    </el-card>
+</template>
+<script>
+import Vue from 'vue'
+import QN_upload from '@/components/qiniu-upload'
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+//导入编辑器组件（共用）
+import vueEditor from '@/components/editor'
+//返回上一页共用组件
+import goBack from '@/components/goBack'
+export default {
+    activated: function() {
+        if (this.$route.params.id) {
+            this.getRead();
+        }
+    },
+    deactivated() {
+        this.$refs['ruleForm'].resetFields();
+        this.ruleForm = {
+            name: '',
+            ename: '',
+            zhiwei: '',
+            cid: [],
+            scly: '',
+            jianshu: '',
+            content: '',
+            img: '',
+            fengmian_img: ''
+        }
+    },
+    data() {
+        return {
+            lymaxlength: 50,
+            jsmaxlength: 80,
+            loadingbiao: false,
+            //判断编辑和新增
+            biaoji: 1,
+            ruleForm: {
+                name: '',
+                ename: '',
+                zhiwei: '',
+                cid: [],
+                scly: '',
+                jianshu: '',
+                content: '',
+                img: '',
+                fengmian_img: ''
+            },
+            qn_upload: {
+                img_upload_progress: 0,
+                img_upload_status: '',
+                img_upload_pro: 0,
+                img_upload_sta: ''
+            },
+            loading: false,
+            rules: {
+                name: [{
+                    required: true,
+                    message: '请填写姓名！',
+                    trigger: 'blur'
+                }],
+                // cid: [{
+                //     type: 'array',
+                //     required: true,
+                //     message: '请选择人物类型！',
+                //     trigger: 'change'
+                // }],
+                // scly: [{
+                //     required: true,
+                //     message: '请填写擅长领域！',
+                //     trigger: 'blur'
+                // }, {
+                //     min: 0,
+                //     max: 50,
+                //     message: '字符要求为50以内',
+                //     trigger: 'blur'
+                // }],
+                // jianshu: [{
+                //     required: true,
+                //     message: '请填写个人简述！',
+                //     trigger: 'blur'
+                // }, {
+                //     min: 0,
+                //     max: 80,
+                //     message: '字符要求为80以内',
+                //     trigger: 'blur'
+                // }]
+            },
+            filters: {
+                mime_types: [{
+                    title: "Image files",
+                    extensions: "jpg,png,bmp,jpeg"
+                }]
+            }
+        }
+
+    },
+    methods: {
+        //保存项目
+        submitForm(formName) {
+            //设置默认主图
+            this.loadingbiao = true;
+            this.$refs[formName].validate((valid) => {
+                if (valid) {
+                    this.setData();
+                } else {
+                    this.loadingbiao = false
+                    return false;
+                }
+            });
+        },
+        //重置项目
+        resetForm(formName) {
+            this.$refs[formName].resetFields();
+        },
+        //点击删除人物图片
+        rmImage() {
+            this.$confirm('确定要移除图片吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.ruleForm.img = ''
+            }).catch(() => {});
+        },
+        //点击删除封面图片
+        rmImagee() {
+            this.$confirm('确定要移除图片吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$message({
+                    type: 'success',
+                    message: '删除成功!'
+                });
+                this.ruleForm.fengmian_img = ''
+            }).catch(() => {});
+        },
+
+        //给form赋值
+        CB_Content(content, token) {
+            this.ruleForm.content = content
+        },
+        /*
+         *数据的处理
+         *
+         */
+        //提交数据
+        setData() {
+            if (this.ruleForm.img == '' || !this.ruleForm.img) {
+                this.$message.error('请上传人物图片')
+                this.loadingbiao = false
+                return
+            }
+            if (this.ruleForm.fengmian_img == '' || !this.ruleForm.fengmian_img) {
+                this.$message.error('请上传封面图片')
+                this.loadingbiao = false
+                return
+            }
+            var url;
+            if (this.$route.params.id) {
+                this.ruleForm.id = this.$route.params.id
+                url = this.API_ROOT + '/api/zhiku/update';
+            } else {
+                url = this.API_ROOT + '/api/zhiku/insert';
+            }
+
+            this.ruleForm.img = this.ruleForm.img.split("!")[0]
+            this.ruleForm.fengmian_img = this.ruleForm.fengmian_img.split("!")[0]
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.ruleForm,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    if (response.data.status.code == 1004 || response.data.status.code == 1006) {
+                        this.lockout()
+                    }
+                } else {
+                    this.$router.go(-1);
+                    this.$message.success('数据保存成功');
+                };
+                this.loadingbiao = false
+            }, (error) => {
+                this.loadingbiao = false
+                this.$emit('API-ERR')
+            });
+        },
+        //获取ruleForm数据
+        getRead() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/zhiku/read',
+                data: {
+                    id: this.$route.params.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                    if (response.data.status.code == 1004 || response.data.status.code == 1006) {
+                        this.lockout()
+                    }
+                } else {
+                    this.ruleForm = response.data.data;
+                    if (!response.data.data.cid)
+                        this.ruleForm.cid = []
+                    delete this.ruleForm.add_time;
+                }
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loading = false
+            });
+        },
+        /**
+         * [回调处理七牛上传相关数据]
+         * 其他更多回调方法参考 七牛组件
+         */
+        //文件上传过程，主要用于展现上传进度
+        CB_UploadProgress(file) {
+            this.qn_upload.img_upload_status = ''
+            this.qn_upload.img_upload_progress = file.percent
+            if (file.percent == 100) {
+                this.qn_upload.img_upload_status = 'success'
+            }
+        },
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl(file) {
+            this.ruleForm.img = file.split('!')[0] + '!230x162'
+            this.$message({
+                type: 'success',
+                message: '图片上传成功'
+            })
+        },
+
+        //获取上传错误信息
+        CB_Error(err, info) {
+            this.qn_upload.img_upload_status = 'exception'
+            if (err.code == -600) {
+                this.$message({
+                    message: '图片最大上传大小不能超过500KB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '图片上传错误！',
+                    type: 'warning'
+                });
+            }
+        },
+        /**
+         * [回调处理七牛上传相关数据]
+         * 其他更多回调方法参考 七牛组件
+         */
+        //文件上传过程，主要用于展现上传进度
+        CBL_UploadProgress(file) {
+            this.qn_upload.img_upload_sta = ''
+            this.qn_upload.img_upload_pro = file.percent
+            if (file.percent == 100) {
+                this.qn_upload.img_upload_sta = 'success'
+            }
+        },
+
+        //获取文件上传成功后返回的文件路径
+        CBL_GetFileUrl(file) {
+            this.ruleForm.fengmian_img = file.split('!')[0] + '!230x162'
+            this.$message({
+                type: 'success',
+                message: '图片上传成功'
+            })
+        },
+
+        //获取上传错误信息
+        CBL_Error(err, info) {
+            this.qn_upload.img_upload_sta = 'exception'
+            if (err.code == -600) {
+                this.$message({
+                    message: '图片最大上传大小不能超过500KB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '图片上传错误！',
+                    type: 'warning'
+                });
+            }
+        }
+    },
+    computed: mapState({
+        zkleixing: state => state.zkleixing
+    }),
+    //注意别忘记挂载组件
+    components: {
+        vueEditor,
+        goBack,
+        QN_upload
+    }
+}
+</script>

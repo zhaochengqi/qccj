@@ -1,0 +1,119 @@
+<template>
+    <div class="fenxiang margin-top-40 padding-top-20 margin-bottom-20">
+        <el-row class="font-110">
+            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                <!-- JiaThis Button BEGIN -->
+                <div class="jiathis_style_32x32">
+                    <a class="jiathis_button_tsina"></a>
+                    <a class="jiathis_button_weixin"></a>
+                    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+                </div>
+            </el-col>
+            <el-col :xs="4" :sm="4" :md="4" :lg="4" class="text-right no-padding">
+                <vue-star animate="animated rotateIn" color="#6cac70">
+                    <a slot="icon" class="fa fa-thumbs-up" @click="handleClick(1,10000)"> 顶 {{ding_count}}</a>
+                </vue-star>
+            </el-col>
+            <el-col :xs="4" :sm="4" :md="4" :lg="4">
+                <vue-star animate="animated rotateIn" color="#f00">
+                    <a slot="icon" class="fa fa-thumbs-down" @click="handleClick(2,10000)"> 踩 {{cai_count}}</a>
+                </vue-star>
+            </el-col>
+        </el-row>
+    </div>
+</template>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<script>
+//分享点赞
+import VueStar from 'vue-star'
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    activated:function () {
+        this.getData()
+    },
+    props: ['dzid'],
+    data() {
+        return {
+            formData: {},
+            dingclass: '',
+            caiclass: '',
+            ding_count:0,
+            cai_count:0
+        }
+    },
+    methods: {
+        //分享插件
+        init() {
+            let url = 'https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js'
+            let script = document.createElement('script')
+            script.setAttribute('src', url)
+            document.getElementsByTagName('head')[0].appendChild(script)
+        },
+        //点击顶和踩时的方法
+        handleClick(type, id) {
+            if(type==1){
+
+            }
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/point',
+                data: {
+                    id: id,
+                    tread: val
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$emit('CB-dincai', 1)
+                }
+            }, (error) => {
+                this.$emit('APP-ERR')
+            })
+        },
+        getData(){
+           this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/pointnum',
+                data: {
+                    id: this.dzid
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.ding_count=response.data.data.topnum
+                    this.cai_count=response.data.data.treadnum
+                }
+            }, (error) => {
+                this.$emit('APP-ERR')
+            })
+        }
+    },
+    mounted() {
+        this.init()
+    },
+    components:{
+        VueStar
+    },
+    computed: mapState({
+        caiData:state=>state.caiData,
+        dingData:state=>state.dingData
+    }),
+}
+</script>
+<style scoped>
+.VueStar {
+    position: relative;
+}
+
+.VueStar a{
+    color: inherit;
+    cursor: pointer;
+}
+
+</style>

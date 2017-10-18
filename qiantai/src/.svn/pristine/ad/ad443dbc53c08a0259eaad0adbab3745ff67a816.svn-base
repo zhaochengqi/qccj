@@ -1,0 +1,58 @@
+<template>
+    <div>
+        <div class="inner-title padding-top-30 margin-bottom-40 margin-top-40">
+            <p class="no-margin"></p>
+            <span class="font-150">相关文章</span>
+        </div>
+        <el-row :gutter="20">
+            <el-col :xs="24" :sm="8" :md="8" :lg="8" v-for="item in article" :key="item.id">
+                <div class="tjyd-img index-img-big margin-bottom-10 font-120" @click="tiaoImage(item.id)">
+                    <router-link :to="{name:'details',params:{id:item.id}}" class="font-120">
+                        <img :src="item.img?item.img+'!273x163':'./static/img/default.jpg'" alt="">
+                    </router-link>
+                </div>
+                <div class="tjyd-xt font-120" @click="tiaoImage(item.id)">
+                    <router-link :to="{name:'details',params:{id:item.id}}" class="font-120">
+                        {{item.title}}
+                    </router-link>
+                </div>
+            </el-col>
+        </el-row>
+    </div>
+</template>
+<script>
+export default {
+    activated:function(){
+        this.getData()
+    },
+    data() {
+        return {
+            article:[]
+        }
+    },
+    props:['xgid'],
+    methods: {
+        //获取相关文章
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/article',
+                data: {
+                    id: this.xgid
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.article = response.data.data.article
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+    }
+}
+</script>

@@ -1,0 +1,224 @@
+<template>
+    <div class="zhuanlan">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="" v-for="item in linkData" :key="item.id">
+                <el-col :xs="24" :sm="6" :md="6" :lg="6">
+                    <div class="zl-zuozhe">
+                        <div class="zuozhe-img">
+                            <img v-if="!item.fengmian_img" src="../../assets/img/default.jpg" @click="chakan(item.id)" alt="">
+                            <img v-else :src="item.fengmian_img + '!175x160' " style="cursor:pointer" @click="chakan(item.id)">
+                        </div>
+                        <div class="zuozhe-txt">
+                            <p class="font-140 margin-top-10" style="cursor:pointer" @click="chakan(item.id)">
+                                {{item.name}}
+                            </p>
+                        </div>
+                    </div>
+                </el-col>
+                <el-col :xs="24" :sm="18" :md="18" :lg="18">
+                    <el-row :gutter="16" class="margin-bottom-40">
+                        <el-col :xs="24" :sm="13" :md="13" :lg="13">
+                            <div class="zhuanlan-list-img index-img-big">
+                                <router-link :to="{name:'geren_details',params:{id:item.news.id}}">
+                                    <img :src="item.news.img ? item.news.img + '!527x315':'../../assets/img/default.jpg'" alt="">
+                                </router-link>
+                            </div>
+                            <div class="zhuanlan-list-date font-110 margin-top-10 margin-bottom-10">
+                                <div class="zl-list-date-left">{{item.news.add_time}}</div>
+                                <div class="zl-list-date-right">
+                                    <span class="laiyuan">来自：</span><span class="padding-right-30 aui-ellipsis-1 laiyuan-title">{{item.news.source}}</span>
+                                    <!-- <i class="fa fa-thumbs-o-up"></i> 0 -->
+                                </div>
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="11" :md="11" :lg="11">
+                            <div class="zhuanlan-list-txt">
+                                <div class="zl-list-title font-150 margin-bottom-50 aui-ellipsis-2">
+                                    <a href="#">
+                                        <router-link :to="{name:'geren_details',params:{id:item.id}}">
+                                            {{item.news.title}}
+                                        </router-link>
+                                    </a>
+                                </div>
+                                <p class="font-110 aui-ellipsis-6">{{item.news.daodu}}</p>
+                            </div>
+                        </el-col>
+                    </el-row>
+                </el-col>
+                <!--                 <el-col :xs="24" :sm="18" :md="18" :lg="18" v-else>
+                    <h3>没有该作者的文章</h3>
+                </el-col> -->
+            </el-row>
+            <div class="fenye padding-top-40 margin-bottom-50">
+                <div class="block" v-if="total>0">
+                    <el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-sizes="[5,10, 20, 30, 40]" :page-size="pageSize" :total="total">
+                    </el-pagination>
+                </div>
+            </div>
+            <!-- 详情弹出框 -->
+            <Inner_tank :dialogStatus="dialog" :zxid="zxid" @CB-dialogStatus="CB_dialogStatus"></Inner_tank>
+        </div>
+    </div>
+</template>
+<script>
+//挂载弹框
+import Inner_tank from '@/page/zhiku/tank'
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+export default {
+    activated: function() {
+        this.getData()
+    },
+    data() {
+        return {
+            dialog: false,
+            pageSize: 5,
+            total: 0,
+            dialogTableVisible: false,
+            loading: false,
+            currentPage: 1,
+            linkData: [],
+            nameData: {},
+            detailData: {},
+            zxid: ''
+        }
+    },
+    methods: {
+        //页码发生变化
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData()
+        },
+        //接收子组件传送过来的数据
+        CB_dialogStatus(val) {
+            this.zxid = ''
+            this.dialog = false
+        },
+        //弹框
+        chakan(id) {
+            this.zxid = id
+            this.dialog = true
+        },
+        //拉取数据
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zhiku/index',
+                data: {
+                    page: this.currentPage,
+                    listRows: this.pageSize,
+                    id: this.$route.params.id,
+                    tid: 4
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.linkData = response.data.data
+                        // this.formData = response.data.data.news
+                        // console.log(this.formData)
+                    this.total = response.data.count
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+    },
+    computed: mapState({
+        _pageSize: state => state.pageSize,
+        _pageSizes: state => state.pageSizes
+    }),
+    components: {
+        Inner_tank
+    }
+
+}
+</script>
+<style scoped>
+.zl-zuozhe {
+    width: 165px;
+    margin: 0 auto;
+    text-align: center;
+    color: #501515;
+}
+
+.zuozhe-img {
+    border: 3px solid #eee;
+    border-radius: 3px;
+    height: 145px;
+    overflow: hidden;
+}
+
+.zuozhe-img img {
+    width: 100%;
+}
+
+.zuozhe-txt button {
+    background-color: #e8645a;
+    padding: 10px 35px;
+}
+
+.zhuanlan-list-img {
+    height: 279px;
+    overflow: hidden;
+}
+
+.zhuanlan-list-img img {
+    width: 100%;
+}
+
+.zhuanlan-list-txt {
+    color: #998b8b;
+}
+
+.zhuanlan-list-txt p {
+    color: #998b8b;
+}
+
+.zl-list-title {
+    line-height: 36px;
+    height: 72px;
+}
+
+.zl-list-title a {
+    color: #501515;
+}
+
+.zl-list-title a:hover {
+    color: #e5655d;
+}
+
+.zhuanlan-list-date {
+    color: #998b8b;
+}
+
+.zl-list-date-left,
+.zl-list-date-right {
+    float: left;
+}
+
+.zl-list-date-left {
+    margin-right: 20px;
+}
+
+.zl-list-date-right {
+    width: 65%;
+}
+
+.zl-list-date-right .laiyuan-title {}
+
+.zhuanlan-list-date span {
+    float: left;
+}
+
+.zhuanlan-list-date span.laiyuan {}
+
+.zhuanlan-list-date span.laiyuan-title {
+    color: #501515;
+    display: inline-block;
+    width: 60%;
+}
+</style>

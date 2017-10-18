@@ -1,0 +1,189 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row :style="{ 'min-height': _PageHeight+'px'}">
+            <el-form ref="form" label-suffix="：" :model="form" :rules="rules" label-width="130px">
+                <el-row :gutter="20">
+                    <el-col :md="8">
+                        <el-form-item label="实习年份">
+                            <el-date-picker v-model="title" align="right" style="width:100%;" type="year" placeholder="请选择实习年份" @change="yearChange">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8">
+                        <el-form-item label="学年级" prop="xnj">
+                            <el-input v-model="form.xnj" placeholder="请填写学年级" style="width:100%" type="number"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8">
+                        <el-form-item label="是否默认年份?">
+                            <el-switch on-text="是" off-text="否" on-value="2" off-value="1" v-model="form.current"></el-switch>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <!-- <hr class="margin-top-40" /> -->
+                <!-- <el-row>
+                    <!-- <h4>学院推荐实习</h4> -->
+                <!-- <el-col :span="9">
+                    <el-form-item label="学生申请时间">
+                        <el-date-picker v-model="time" type="daterange" style="width:100%;" placeholder="选择学生申请时间" :picker-options="pickerOptions" range-separator=" 至 " @change="yearSet">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col> -->
+                <!-- </el-row> -->
+                <el-row class="margin-top-40">
+                    <el-form-item>
+                        <el-button type="primary" :loading="loadingJiaZai" @click="submitForm('form')"><span>保存学年信息</span></el-button>
+                    </el-form-item>
+                </el-row>
+            </el-form>
+        </el-row>
+    </el-card>
+</template>
+<script>
+import Vue from 'vue'
+//返回上一页共用组件
+import goBack from '@/components/goBack'
+export default {
+    activated: function() {
+        if (this.$route.params.id) {
+            this.getRead();
+        }
+    },
+    deactivated: function() {
+        this.title = ''
+        this.form = {
+            title: '', // 学年名称
+            xnj: '', // 实习对象
+            current: 1, // 是否当前学年
+            time: ''
+        }
+    },
+    data() {
+        return {
+            pickerOptions: {
+                disabledDate(time) {
+                    return time.getTime() < Date.now() - 8.64e7;
+                }
+            },
+            time: '',
+            title: '',
+            form: {
+                title: '', // 学年名称
+                current: 1, // 是否当前学年
+                time: '', //学生申请时间,
+                xnj: null
+            },
+            loading: false,
+            loadingJiaZai: false,
+            rules: {
+                xnj: [{
+                    required: true,
+                    message: '学年级不能为空',
+                    trigger: 'blur'
+                }, {
+                    max: 4,
+                    min: 4,
+                    message: '请输入4位数字',
+                    trigger: 'blur'
+                }]
+            }
+        }
+    },
+    methods: {
+        //实习学年
+        yearChange(val) {
+            this.form.title = val
+        },
+        //确定提交
+        submitForm(val) {
+            this.loadingJiaZai = true;
+            this.$refs[val].validate((vail) => {
+                if (vail) {
+                    this.setData();
+                } else {
+                    this.loadingJiaZai = false;
+                }
+            })
+        },
+        setData() {
+            var url;
+            if (!this.form.title || this.form.title == '') {
+                this.$message.error('请选择实习年份')
+                this.loadingJiaZai = false;
+                return
+            }
+            if (this.$route.params.id) {
+                this.form.id = this.$route.params.id
+                url = this.API_ROOT + '/api/years/update'
+            } else {
+                url = this.API_ROOT + '/api/years/insert';
+            }
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.$message({
+                        type: 'success',
+                        message: '保存成功'
+                    })
+                    this.form = {
+                        title: "", // 学年名称
+                        xnj: '', // 实习对象
+                        current: 1, // 是否当前学年
+                        time: '' //申请时间
+                    }
+                    this.title = ''
+                    this.time = ''
+                    this.$router.push({
+                        name: 'yearset'
+                    })
+                };
+                this.loadingJiaZai = false;
+            }, (error) => {
+                this.loadingJiaZai = false;
+                this.$emit('API-ERR')
+            });
+        },
+        getRead() {
+            this.loading = true;
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/years/read',
+                data: {
+                    id: this.$route.params.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.title = response.data.data.title.toString()
+                    this.form = response.data.data
+                    this.form.current = this.form.current.toString()
+                    this.form.xnj = response.data.data.xnj.toString();
+                };
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR')
+                this.loading = false
+            });
+        },
+
+    },
+    components: {
+        goBack
+    }
+}
+</script>

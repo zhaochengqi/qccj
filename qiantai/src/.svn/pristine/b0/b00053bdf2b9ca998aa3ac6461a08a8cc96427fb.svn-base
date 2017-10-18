@@ -1,0 +1,183 @@
+<template>
+    <div class="cy-ds">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17">
+                    <el-row :gutter="60" class="margin-bottom-30" v-loading="loading" element-loading-text="拼命加载中">
+                        <el-col :xs="24" :sm="12" :md="12" :lg="12" v-for="(item,index) in linkData" :key="index">
+                            <el-row :gutter="20" class="margin-bottom-50 padding-bottom-10">
+                                <el-col :span="12">
+                                    <div class="daoshi-img index-img-big">
+                                        <img :src="item.img?item.img + '!159x145':'./static/img/default.jpg'" @click="chakan(item.id)" alt="">
+                                    </div>
+                                </el-col>
+                                <el-col :span="12">
+                                    <div class="daoshi-txt">
+                                        <div class="ds-name font-120 margin-bottom-10 aui-ellipsis-2" @click="chakan(item.id)">{{item.name}}</div>
+                                        <div class="ds-zc">
+                                            <div class="ds-zc-title font-120 aui-ellipsis-1">
+                                                {{item.zhiwei}}
+                                            </div>
+                                            <div class="ds-zc-jj font-110 aui-ellipsis-2">
+                                                {{item.scly}}
+                                            </div>
+                                            <div class="ds-zc-jj font-110 aui-ellipsis-2">
+                                                <p v-html="item.jianshu"></p>
+                                            </div>
+                                            <div class="ds-more margin-top-30">
+                                                <el-button type="danger" @click="goXq(item.id)">查看更多</el-button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </el-col>
+                            </el-row>
+                        </el-col>
+                    </el-row>
+                    <div class="fenye margin-bottom-50">
+                        <div class="block" v-if="total>0">
+                            <el-pagination layout="prev, pager, next" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <Index_zhuanlan></Index_zhuanlan>
+                    </div>
+                    <!-- 广告 -->
+                    <guanggao weizhi='智库首页' listRows='1'></guanggao>
+                </el-col>
+            </el-row>
+            <Index_links>此处显示友情链接</Index_links>
+        </div>
+        <!-- 详情弹出框 -->
+        <Inner_tank :dialogStatus="dialog" :zxid="zxid" @CB-dialogStatus="CB_dialogStatus"></Inner_tank>
+        <!--         <el-dialog :visible.sync="dialogTableVisible">
+            <el-row :gutter="50" class="">
+                <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                    <div class="xiangqing-img"><img :src="detailData.img" alt=""></div>
+                </el-col>
+                <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                    <div class="zhuanti-txt">
+                        <h4 class="font-120 no-margin margin-bottom-10">{{detailData.name}}</h4>
+                        <h4 class="font-120 no-margin margin-bottom-30">{{detailData.zhiwei}}</h4>
+                        <p>{{detailData.content}}</p>
+                    </div>
+                </el-col>
+            </el-row>
+        </el-dialog> -->
+    </div>
+</template>
+<script>
+//挂载弹框
+import Inner_tank from '@/page/zhiku/tank'
+//挂载智库专栏
+import Index_zhuanlan from './inner'
+//挂载友情链接
+import Index_links from '@/page/index/links'
+//广告位
+import guanggao from '@/page/news/guanggao'
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+export default {
+    activated: function() {
+        this.getData()
+    },
+    data() {
+        return {
+            dialog: false,
+            total: 0,
+            currentPage: 1,
+            loading: false,
+            dialogTableVisible: false,
+            linkData: [],
+            detailData: {},
+            cid: '',
+            guangao: null,
+            zxid: ''
+        }
+    },
+    watch: {
+        '$route.meta.cid': function(newValue, oldValue) {
+            if (newValue == '' || !newValue) return
+            this.getData()
+        },
+    },
+    methods: {
+        //拉取数据
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zhiku/index',
+                data: {
+                    cid: this.$route.meta.cid,
+                    page: this.currentPage,
+                    listRows: 14
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.linkData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+        //接收子组件传送过来的数据
+        CB_dialogStatus(val) {
+            this.zxid = ''
+            this.dialog = false
+        },
+        //显示页条数
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        handleCurrentChange(val) {
+            this.loading = true;
+            this.currentPage = val;
+            this.getData();
+        },
+        goXq: function(id) {
+            this.$router.push({
+                name: 'zuozhe_geren',
+                params: {
+                    id: id
+                }
+            })
+        },
+        //弹框
+        chakan(id) {
+            this.zxid = id
+            this.dialog = true
+        },
+
+    },
+    computed: mapState({
+        _pageSize: state => state.pageSize,
+        _pageSizes: state => state.pageSizes
+    }),
+    components: {
+        Index_zhuanlan,
+        Index_links,
+        Inner_tank,
+        guanggao
+    }
+}
+</script>
+<style type="text/css">
+.daoshi-img {
+    cursor: pointer;
+}
+
+.ds-name {
+    cursor: pointer;
+}
+</style>

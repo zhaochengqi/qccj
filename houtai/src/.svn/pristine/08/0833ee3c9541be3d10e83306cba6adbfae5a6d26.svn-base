@@ -1,0 +1,150 @@
+<template>
+    <el-dialog :title="title" v-model="dialogFormVisible" close-on-press-escape @close="cleardialog">
+        <el-form :model="form" label-width="120px" ref="form" :rules="rules">
+            <el-row>
+                <el-form-item label="友情链接名称" required prop="link_name">
+                    <el-col :md="16">
+                        <el-input v-model="form.link_name" placeholder="请填写友情链接名称，必填项" ></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="链接地址" required prop="link_url">
+                    <el-col :md="16">
+                        <el-input v-model="form.link_url" placeholder="请填写友情链接地址，必填项" >
+                            <template slot="prepend">http://</template>
+                        </el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="排列序号" required prop="sort">
+                    <el-col :md="24">
+                        <el-input-number v-model="form.sort" size="small"  :min="1" :max="99999"></el-input-number>
+                        <el-tooltip class="item" effect="dark" content="排序规则：优先按照排序序号从大到小排列，排序号相同的，按照添加链接的顺序排列。" placement="top">
+                            <i class="ti-help-alt mar-lft "></i>
+                        </el-tooltip>
+                        <span class="mar-lft text-danger">数字越大，排序越靠前！</span>
+                    </el-col>
+                </el-form-item>
+            </el-row>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="saveData('form')" v-if="authCheck(82) || authCheck(85)" :loading="loadingbiao">确认保存</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    props: ['dialogStatus', 'ljid'],
+    data() {
+        return {
+            loadingbiao: false,
+            dialogFormVisible: false,
+            form: {
+                link_name: '',
+                link_url: '',
+                sort:''
+            },
+            title:'添加友情链接信息',
+            rules: {
+                link_name: [{
+                    required: true,
+                    message: '请填写友情链接名称！',
+                    trigger: 'blur'
+                }],
+                link_url: [{
+                    required: true,
+                    message: '请填写友情链接地址！',
+                    trigger: 'blur'
+                }],
+            }
+
+        }
+    },
+    watch: {
+        dialogStatus(newValue) {
+            this.dialogFormVisible = newValue
+        },
+        'ljid':function(newValue,oldValue){
+            if(newValue==oldValue||newValue=='') return
+            if(newValue){
+                this.title ='编辑友情链接信息'
+                this.getData()
+            }
+        }
+    },
+    methods: {
+        cleardialog() {
+            this.form={
+                link_name: '',
+                link_url: '',
+                sort:''
+            }
+            if(this.ljid) this.title='添加友情链接信息'
+            this.$emit('CB-dialogStatus')
+        },
+        //保存数据
+        saveData(){
+            this.loadingbiao = true;
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    this.setData();
+                } else {
+                    this.loadingbiao = false
+                    return false;
+                }
+            });
+        },
+        //处理数据
+        setData() {
+            var url
+            if (this.ljid) {
+                url = this.API_ROOT + '/api/link/update';
+            } else {
+                url = this.API_ROOT + '/api/link/insert';
+            }
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                 this.dialogFormVisible=false
+                }
+                this.loadingbiao = false
+            }, (error) => {
+                this.loadingbiao = false
+                this.$emit('API-ERR');
+            })
+
+        },
+       //编辑页面进来
+        getData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/link/read',
+                data: {
+                    id:this.ljid
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                }
+                this.loadingbiao = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loadingbiao = false
+            })
+        },
+
+    }
+}
+</script>

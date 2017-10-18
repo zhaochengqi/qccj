@@ -1,0 +1,32 @@
+<template>
+    <div>
+        <el-input :placeholder="placeholder" icon="search" id="awaitKeys" clearable>
+        </el-input>
+    </div>
+</template>
+<script type="text/javascript">
+export default {
+    //检索默认内容，多少秒后检索（毫秒）
+    props: ['placeholder', 'jiansuoTime'],
+    data: function() {
+        return {}
+    },
+    mounted() {
+        $('#awaitKeys').children().last().keyup((val) => {
+            var oldValue = $('#awaitKeys').children().last().val();
+            setTimeout(() => {
+                if (oldValue == $('#awaitKeys').children().last().val()) {
+                    oldValue = oldValue.replace(/[\'\"\\\/\b\f\n\r\t]/g, '') //去掉转义字符
+                    oldValue = oldValue.replace(/[\-\_\,\!\|\~\`\(\)\#\$\%\^\&\*\{\}\:\;\"\L\<\>\?]/g, ''); // 去掉特殊字符
+                    this.cb(oldValue);
+                }
+            }, this.jiansuoTime);
+        })
+    },
+    methods: {
+        cb(val) {
+            this.$emit('CB-awaitSosuo', val)
+        }
+    }
+}
+</script>

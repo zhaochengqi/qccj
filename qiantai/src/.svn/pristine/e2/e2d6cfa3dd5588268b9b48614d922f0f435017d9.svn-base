@@ -1,0 +1,176 @@
+<template>
+    <div class="cy-ds">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="60" class="margin-bottom-50">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17" v-loading="loading" element-loading-text="拼命加载中">
+                    <div class="news-details">
+                        <h1 class="margin-bottom-30">{{formData.title}}</h1>
+                        <div class="news-date margin-bottom-30">{{nameData[0]}} &nbsp;&nbsp;发表于&nbsp; {{formData.add_time}} &nbsp;&nbsp;来源：&nbsp;{{sourceData[0]}}</div>
+                        <div class="news-main">
+                            <p v-html="formData.content"></p>
+                        </div>
+                    </div>
+                    <div class="fenxiang padding-top-10">
+                        <el-row class="">
+                            <el-col :xs="10" :sm="16" :md="16" :lg="16">
+                                <div class="bdsharebuttonbox">
+                                    <a href="http://service.weibo.com/share/share.php?appkey=&title=&url=&searchPic=false&style=simple" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"><img src="../../assets/img/weibo.png" alt=""></a>
+                                    <a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"><img src="../../assets/img/weixin.png" alt=""></a>
+                                </div>
+                            </el-col>
+                            <el-col :xs="14" :sm="8" :md="8" :lg="8">
+                                <div class="zixun-date">
+                                    <i class="fa fa-thumbs-o-up"></i> 顶 0　<i class="fa fa-thumbs-o-down"></i> 踩 0
+                                    <!-- <i class="el-icon-star-off"></i> 收藏 0 -->
+                                </div>
+                            </el-col>
+                        </el-row>
+                    </div>
+                    <div class="inner-title padding-top-30 margin-bottom-40 margin-top-40">
+                        <p class="no-margin"></p>
+                        <span class="font-150">相关文章</span>
+                    </div>
+                    <el-row :gutter="20">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8" v-for="item in wzData" :key="item.id">
+                            <div class="tjyd-img index-img-big margin-bottom-10" @click="tiaoImage(item.id)">
+                                <!-- <router-link :to="{name: 'geren_details',params:{id:item.id}}"> -->
+                                <img v-if="!item.img" src="../../assets/img/default.jpg" alt="">
+                                <img v-else :src="item.img" alt="">
+                                <!-- </router-link> -->
+                            </div>
+                            <div class="tjyd-xt">
+                                <router-link :to="{name: 'geren_details',params:{id:item.id}}">
+                                    {{item.title}}
+                                </router-link>
+                            </div>
+                        </el-col>
+                    </el-row>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <Inner_zixun>此处显示最新资讯</Inner_zixun>
+                        <Inner_zhuanti></Inner_zhuanti>
+                        <div class="guanggao index-img-big" v-if="advert.length>1">
+                            <a :href="advert.link_url">
+                                <img v-if="!advert.img" src="../../assets/img/default.jpg" alt="">
+                                <img v-else :src="advert.img" alt="">
+                            </a>
+                            <span class="font-80">广告</span>
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+            <Inner_links>此处显示友情链接</Inner_links>
+        </div>
+    </div>
+</template>
+<script>
+//挂载最新资讯
+import Inner_zixun from '@/page/news/zixun'
+//挂载专题
+import Inner_zhuanti from '@/page/index/zhuanti'
+//挂载友情链接
+import Inner_links from '@/page/index/links'
+export default {
+    activated: function() {
+        this.id = this.$route.params.id
+        this.getData();
+    },
+    data() {
+        return {
+            formData: {},
+            loading: false,
+            nameData: {},
+            sourceData: {},
+            wzData: [],
+            advert: [],
+            id: ''
+        }
+    },
+    methods: {
+        tiaoImage(val) {
+            this.id = val;
+            this.getData()
+                //因为路由没有变所以加个
+            this.$router.push({
+                name: 'geren_details',
+                params: {
+                    id: val
+                }
+            })
+        },
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zhikutext/showwenzhang',
+                data: {
+                    id: this.id
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.formData = response.data.data.zhikutext
+                    this.nameData = response.data.data.zhikutext.name
+                    this.sourceData = response.data.data.zhikutext.source
+                    this.wzData = response.data.data.article
+                    this.advert = response.data.data.zhikutext.guanggao
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        }
+    },
+    computed: {},
+    components: {
+        Inner_zixun,
+        Inner_zhuanti,
+        Inner_links
+    }
+}
+</script>
+<style>
+.news-details {
+    color: #501515;
+}
+
+.news-details h1 {
+    font-size: 24px;
+    color: #501515;
+    margin-top: 0;
+}
+
+.news-date {
+    font-size: 14px;
+}
+
+.news-jj {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.news-main {
+    font-size: 18px;
+}
+
+.news-main h4 {
+    font-size: 18px;
+    color: #501515;
+}
+
+.fenxiang {
+    width: 590px;
+    border-top: 1px dashed #dcdcdc;
+}
+
+.fx-menu a {
+    display: inline-block;
+}
+
+.fx-menu img {
+    float: left;
+}
+</style>

@@ -1,0 +1,86 @@
+<template>
+    <div class="fenxiang margin-top-40 padding-top-20 margin-bottom-20">
+        <el-row class="font-110">
+            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                <!-- JiaThis Button BEGIN -->
+                <div class="jiathis_style_32x32">
+                    <a class="jiathis_button_tsina"></a>
+                    <a class="jiathis_button_weixin"></a>
+                    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+                </div>
+            </el-col>
+            <el-col :xs="4" :sm="4" :md="4" :lg="4" class="text-right no-padding">
+                <vue-star animate="animated rotateIn" color="#F05654">
+                    <a slot="icon" class="fa fa-thumbs-up" @click="handleClick(1,10000)"> 顶 100</a>
+                </vue-star>
+            </el-col>
+            <el-col :xs="4" :sm="4" :md="4" :lg="4">
+                <vue-star animate="animated rotateIn" color="#C80000">
+                    <a slot="icon" class="fa fa-thumbs-down" @click="handleClick(2,10000)"> 踩 100</a>
+                </vue-star>
+            </el-col>
+        </el-row>
+    </div>
+</template>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<script>
+//分享点赞
+import VueStar from 'vue-star'
+
+export default {
+    props: ['id', 'cai_count', 'ding_count', 'state'],
+    data() {
+        return {
+            formData: {},
+            dingclass: '',
+            caiclass: ''
+        }
+    },
+    methods: {
+        //分享插件
+        init() {
+            let url = 'https://cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js'
+            let script = document.createElement('script')
+            script.setAttribute('src', url)
+            document.getElementsByTagName('head')[0].appendChild(script)
+        },
+        //点击顶和踩时的方法
+        handleClick(type, id) {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/news/point',
+                data: {
+                    id: id,
+                    tread: val
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$emit('CB-dincai', 1)
+                }
+            }, (error) => {
+                this.$emit('APP-ERR')
+            })
+        }
+    },
+    mounted() {
+        this.init()
+    },
+    components:{
+        VueStar
+    }
+}
+</script>
+<style scoped>
+.yanse {
+    color: red;
+}
+.zixun-date span:hover{
+    color: red;
+    cursor: pointer;
+}
+.VueStar{
+    position: relative;
+}
+</style>

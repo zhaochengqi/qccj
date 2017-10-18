@@ -1,0 +1,333 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="5" :sm="8" :xs="12">
+                    学年级：<span class="text-info">2013级</span>
+                </el-col>
+                <el-col :md="5" :sm="8" :xs="12">
+                    我的培养计划：<span class="text-info">2013级</span>
+                </el-col>
+                <el-col :md="5" :sm="16" :xs="24">
+                    当前学期：<span class="text-info">第五学期</span>
+                </el-col>
+                <el-col :md="9" :sm="16" :xs="24">
+                    专业课群：<span class="text-info">工程防灾和风险评估课群组</span>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+50+'px'}">
+            <el-row class="margin-bottom-10">
+                <el-col :md="8">
+                    <i class="el-icon-date"></i> <span class="text-danger">第五学期</span> 我的培养计划安排
+                </el-col>
+                <el-col :md="16" class="text-right ">
+                    查看其他学期的培养计划：
+                    <el-select size="small" v-model="xueqi" placeholder="不限学期" @change="selectXueqi">
+                        <el-option v-for="xq in xueqi_data" :label="xq.title" :value="xq.id" :key="xq.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :span="24" class="mar-top">
+                    <el-tabs v-model="activeName" type="card" @tab-click="handleClick">
+                        <el-tab-pane label="学分完成情况" name="xuefen">
+                            <el-table :data="tableData" stripe border style="width: 100%">
+                                <el-table-column prop="kcxz" label="课程类别" min-width="155"></el-table-column>
+                                <el-table-column label="必修课学分" min-width="150">
+                                    <template scope="scope">
+                                        <el-tag :close-transition="true" :type="scope.row.bixiu > scope.row.bixiu_yx ? 'danger' : 'success'">{{scope.row.bixiu_yx}} / {{scope.row.bixiu}}
+                                        </el-tag>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="选修课学分" min-width="150">
+                                    <template scope="scope">
+                                        <el-tag :close-transition="true" :type="scope.row.xuanxiu > scope.row.xuanxiu_yx ? 'danger' : 'success'">{{scope.row.xuanxiu_yx}} / {{scope.row.xuanxiu}}
+                                        </el-tag>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="完成情况" min-width="150">
+                                    <template scope="scope">
+                                        <el-tag :close-transition="true" v-if="scope.row.kcxz == '公共基础课'" type="success">已达标</el-tag>
+                                        <div v-if="scope.row.kcxz != '公共基础课'">
+                                            <el-tag :close-transition="true" type="danger">未达标</el-tag>
+                                        </div>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="说明" width="350" fixed="right">
+                                    <template scope="scope">
+                                        <div v-if="scope.row.kcxz == '专业基础课'">
+                                            已获得<span class="text-primary">“必修课学分”</span>为<span class="text-danger">40.5</span>分，距离要求少<span class="text-danger">4.5</span>分；
+                                        </div>
+                                        <div v-if="scope.row.kcxz == '专业课'">
+                                            已获得<span class="text-primary">“必修课学分”</span>为<span class="text-danger">40.5</span>分，距离要求少<span class="text-danger">4.5</span>分；
+                                        </div>
+                                        <div v-if="scope.row.kcxz == '实践环节'">
+                                            已获得<span class="text-primary">“选修课学分”</span>为<span class="text-danger">7.5</span>分，距离要求少<span class="text-danger">0.5</span>分；
+                                        </div>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </el-tab-pane>
+                        <el-tab-pane label="课程安排（含成绩）" name="kecheng">
+                            <el-row class="mar-btm">
+                                <el-col :md="6" class="pad-rgt">
+                                    <el-input placeholder="检索：课程代码、课程名称" icon="search" v-model="keys">
+                                    </el-input>
+                                </el-col>
+                                <el-col :md="5" class="pad-rgt">
+                                    <el-select v-model="kc_class_id" placeholder="不限课程类别" clearable @change="selectKecheng" style="width:100%">
+                                        <el-option v-for="kc in kc_class_data" :label="kc.title" :value="kc.id" :key="kc.id">
+                                        </el-option>
+                                    </el-select>
+                                </el-col>
+                                <el-col :md="5" class="pad-rgt">
+                                    <el-select v-model="xk_class_id" placeholder="不限修课类型" clearable @change="selectXiuke" style="width:100%">
+                                        <el-option v-for="xk in xk_class_data" :label="xk.title" :value="xk.id" :key="xk.id">
+                                        </el-option>
+                                    </el-select>
+                                </el-col>
+                                <el-col :md="5" class="pad-rgt">
+                                    <el-select v-model="chengji_type" placeholder="不限成绩" clearable style="width:100%">
+                                        <el-option v-for="cj in chengjiType_data" :label="cj.title" :value="cj.id" :key="cj.id">
+                                        </el-option>
+                                    </el-select>
+                                </el-col>
+                            </el-row>
+                            <el-table :data="chengjiData" stripe highlight-current-row border style="width: 100%">
+                                <el-table-column type="index" width="60" fixed>
+                                </el-table-column>
+                                <el-table-column min-width="180" prop="kc_name" label="课程名称" fixed></el-table-column>
+                                <el-table-column width="100" prop="kcdm" label="课程代码"></el-table-column>
+                                <el-table-column width="150" prop="kc_type" label="课程类别"></el-table-column>
+                                <el-table-column width="100" prop="xk_type" label="修课类型"></el-table-column>
+                                <el-table-column prop="xuefen" label="学分"></el-table-column>
+                                <el-table-column prop="xueshi" label="学时"></el-table-column>
+                                <el-table-column width="100" prop="teacher" label="教师姓名"></el-table-column>
+                                <el-table-column width="100" prop="khfs" label="考核方式"></el-table-column>
+                                <el-table-column width="120" label="成绩" fixed="right">
+                                    <template scope="scope">
+                                        <div v-if="scope.row.chengji == '及格'" class="text-success">{{scope.row.chengji}}</div>
+                                        <div v-if="scope.row.chengji == '不及格'" class="text-danger">{{scope.row.chengji}}</div>
+                                        <el-tooltip class="item" effect="dark" placement="left" v-if="scope.row.xuehao == '10011'">
+                                            <div slot="content">
+                                                <p>该成绩为学分认定成绩</p>
+                                                <p>原课号：10010</p>
+                                                <p>原课程：中国近代史纲要</p>
+                                            </div>
+                                            <span class="text-danger">（替）</span>
+                                        </el-tooltip>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </el-tab-pane>
+                    </el-tabs>
+                </el-col>
+            </el-row>
+        </div>
+        <div class="clearfix" :class="{hidden:isHidden}">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+    </el-card>
+</template>
+<script>
+export default {
+    created: function() {
+        // console.log(this.$store.getters.doneTodos);
+        // this.getData();
+    },
+    //切换keep时触发该方法
+    activated: function() {
+        // this.getData();
+    },
+    data() {
+        return {
+            count: 0,
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            start: 0,
+            keys: this.$route.params.q,
+            loading: false,
+            xueqi: '5',
+            kc_class_id: '',
+            xk_class_id: '',
+            activeName: 'xuefen',
+            isHidden: true,
+            isJige: true,
+            chengji_type: '',
+            tableData: [{
+                kcxz: '公共基础课',
+                zxs: '1224',
+                zxf: '70.5',
+                zxf_yx: '70.5',
+                bixiu: '70.5',
+                bixiu_yx: '70.5',
+                xuanxiu: '0',
+                xuanxiu_yx: '0'
+            }, {
+                kcxz: '专业基础课',
+                zxs: '851',
+                zxf: '50',
+                zxf_yx: '40.5',
+                bixiu: '50',
+                bixiu_yx: '40.5',
+                xuanxiu: '0',
+                xuanxiu_yx: '0'
+            }, {
+                kcxz: '专业课',
+                zxs: '323',
+                zxf: '19',
+                zxf_yx: '19',
+                bixiu: '12',
+                bixiu_yx: '11',
+                xuanxiu: '7',
+                xuanxiu_yx: '8'
+            }, {
+                kcxz: '实践环节',
+                zxs: '136',
+                zxf: '8',
+                zxf_yx: '7.5',
+                bixiu: '0',
+                bixiu_yx: '0',
+                xuanxiu: '8',
+                xuanxiu_yx: '7.5'
+            }],
+            //成绩
+            chengjiData: [{
+                kcdm: '002016',
+                kc_name: '形势与政策（1）',
+                kc_type: '公共基础课',
+                xk_type: '必修',
+                chengji: '及格',
+                xuefen: '0.5',
+                xueshi: '30',
+                teacher: '邵龙宝',
+                khfs: '考试'
+            }, {
+                kcdm: '002016',
+                kc_name: '形势与政策（1）',
+                kc_type: '公共基础课',
+                xk_type: '必修',
+                chengji: '不及格',
+                xuefen: '0.5',
+                xueshi: '30',
+                teacher: '邵龙宝',
+                khfs: '考试'
+            }, {
+                kcdm: '002016',
+                kc_name: '形势与政策（1）',
+                kc_type: '公共基础课',
+                xk_type: '必修',
+                chengji: '及格',
+                xuefen: '0.5',
+                xueshi: '30',
+                teacher: '邵龙宝',
+                khfs: '考试'
+            }, {
+                kcdm: '002016',
+                kc_name: '形势与政策（1）',
+                kc_type: '公共基础课',
+                xk_type: '必修',
+                chengji: '及格',
+                xuefen: '0.5',
+                xueshi: '30',
+                teacher: '邵龙宝',
+                khfs: '考试'
+            }, {
+                kcdm: '002016',
+                kc_name: '形势与政策（1）',
+                kc_type: '公共基础课',
+                xk_type: '必修',
+                chengji: '不及格',
+                xuefen: '0.5',
+                xueshi: '30',
+                teacher: '邵龙宝',
+                khfs: '考试'
+            }, {
+                kcdm: '002016',
+                kc_name: '形势与政策（1）',
+                kc_type: '公共基础课',
+                xk_type: '必修',
+                chengji: '及格',
+                xuefen: '0.5',
+                xueshi: '30',
+                teacher: '邵龙宝',
+                khfs: '考试'
+            }],
+
+        }
+
+    },
+
+    methods: {
+        handleSizeChange(val) {
+            console.log(`每页 ${val} 条`);
+            this.$store.commit('setPageSize', val);
+            // this.pageSize = val;
+            this.getData();
+        },
+        handleCurrentChange(val) {
+            this.loading = true;
+            this.currentPage = val;
+            this.getData();
+            this.start = this.currentPage * this.pageSize;
+            console.log(`当前页: ${val}`);
+        },
+        //当学期下拉菜单值发生改变时，回调此方法
+        selectXueqi(val) {
+            console.log('选择的学期Value值为：' + val)
+        },
+
+        //当课程类型下拉菜单值发生改变时，回调此方法
+        selectKecheng(val) {
+            console.log('选择的课程类型Value值为：' + val)
+        },
+        //当修课类型菜单值发生改变时，回调此方法
+        selectXiuke(val) {
+            console.log('选择的修课类型Value值为：' + val)
+        },
+        handleClick(tab, event) {
+            if (tab.name == 'xuefen') {
+                this.isHidden = true
+            } else {
+                this.isHidden = false
+            }
+            console.log(tab, event);
+        },
+        //返回上一页
+        goBack() {
+            this.$router.go(-1)
+        }
+
+    },
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        },
+
+        //课程类型
+        kc_class_data: function() {
+            return this.$store.state.kechengType
+        },
+        //课程属性
+        xk_class_data: function() {
+            return this.$store.state.kechengShuxing
+        },
+        //学期下拉菜单
+        xueqi_data: function() {
+            return this.$store.state.xueqiList
+        },
+        //成绩类型
+        chengjiType_data: function() {
+            return this.$store.state.chengjiType
+        }
+    }
+}
+</script>

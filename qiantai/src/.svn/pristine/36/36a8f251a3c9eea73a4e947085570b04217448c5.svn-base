@@ -1,0 +1,61 @@
+<template>
+    <div class="margin-bottom-40">
+        <div class="inner-title padding-top-30">
+            <p class="no-margin"></p>
+            <span class="font-150">推荐视频</span>
+        </div>
+        <el-row :gutter="20">
+            <el-col :xs="24" :sm="8" :md="8" :lg="8" v-for="item in tuijianData" :key="item.id">
+                <div class="tjyd-img index-img-big margin-bottom-10">
+                    <router-link :to="{name:'bofang',params:{id:item.id}}">
+                        <img v-if="!item.img" src="../../assets/img/default.jpg" alt="">
+                        <img v-else :src="item.img" alt="">
+                    </router-link>
+                </div>
+                <div class="tjyd-xt">
+                    <router-link :to="{name:'bofang',params:{id:item.id}}" class="font-120">
+                        {{item.title}}
+                    </router-link>
+                </div>
+            </el-col>
+        </el-row>
+    </div>
+</template>
+<script>
+export default {
+    activated() {
+            this.getData();
+        },
+        data() {
+            return {
+                tuijianData: [],
+                data: {}
+            }
+        },
+        methods: {
+            getData() {
+                if (this.$route.params.id) {
+                    this.data = {
+                        id: this.$route.params.id
+                    }
+                } else {
+                    this.data = {}
+                }
+                this.axios({
+                    method: 'post',
+                    url: this.API_ROOT + '/home_api/videos/tuijianvideos',
+                    data: this.data
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.tuijianData = response.data.data;
+                    }
+                }, (error) => {
+                    this.$emit('API-ERR')
+                })
+            }
+        },
+
+}
+</script>

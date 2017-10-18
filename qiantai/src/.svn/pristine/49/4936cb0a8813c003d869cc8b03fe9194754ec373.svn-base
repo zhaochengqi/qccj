@@ -1,0 +1,41 @@
+<template>
+    <div class="guanggao index-img-big" v-if="guanggaoData">
+        <a :href="guanggaoData.link_url">
+            <img :src="guanggaoData.img?guanggaoData.img+'!335x300':'./static/img/default.jpg'" alt="">
+        </a>
+        <span class="font-80">广告</span>
+    </div>
+</template>
+<script>
+export default {
+    activated: function() {
+        this.getGuanggao()
+    },
+    props: ['weizhi', 'listRows'],
+    data() {
+        return {
+            guanggaoData: []
+        }
+    },
+    methods: {
+        getGuanggao() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/guanggao',
+                data: {
+                    type: this.weizhi,
+                    listRows: this.listRows
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.guanggaoData = response.data.data ? response.data.data[0] : []
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        }
+    }
+}
+</script>

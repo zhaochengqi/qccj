@@ -1,0 +1,231 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row :style="{ 'min-height': _PageHeight+'px'}">
+            <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="120px" class="demo-ruleForm">
+                <el-row>
+                    <el-col :md="8">
+                        <el-form-item prop="name" label="姓名">
+                            <el-input v-model="ruleForm.name" placeholder="请填写姓名"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8">
+                        <el-form-item prop="ename" label="英文姓名">
+                            <el-input v-model="ruleForm.ename" placeholder='请填写英文姓名'></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8">
+                        <el-form-item prop="zhiwei" label="职位">
+                            <el-input v-model="ruleForm.zhiwei" placeholder="请填写职务，如无，填写'无'"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-form-item prop="cid" label="人物类型">
+                    <el-select v-model="ruleForm.cid" clearable placeholder="请选择人物类型">
+                        <el-option v-for="item in zkleixing" :label="item.title" :value="item.id" :key="item.id"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item prop="scly" label="擅长领域">
+                    <el-input v-model="ruleForm.scly" placeholder="请填写擅长的领域，字数子50个字数以内" type="textarea" :autosize="{ minRows: 2, maxRows: 4}"></el-input>
+                </el-form-item>
+                <el-form-item prop="jianshu" label="个人简述">
+                    <el-input v-model="ruleForm.jianshu" placeholder="请填写个人简述" type="textarea" :autosize="{ minRows: 2, maxRows: 4}"></el-input>
+                </el-form-item>
+                <el-form-item label="人物介绍" prop="content">
+                    <vueEditor :editContent="ruleForm.content" :height="200" @Callback-Content="CB_Content"></vueEditor>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="submitForm('ruleForm')" :loading="loadingbiao">{{queren}}</el-button>
+                    <el-button @click="resetForm('ruleForm')">重置</el-button>
+                </el-form-item>
+            </el-form>
+        </el-row>
+    </el-card>
+</template>
+<script>
+import Vue from 'vue'
+
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+//导入编辑器组件（共用）
+import vueEditor from '@/components/editor'
+//返回上一页共用组件
+import goBack from '@/components/goBack'
+export default {
+    activated: function() {
+        if (this.$route.params.id) {
+            this.getRead();
+        }
+    },
+    deactivated() {
+        this.ruleForm = {
+            name: '',
+            ename: '',
+            zhiwei: '',
+            cid: '',
+            scly: '',
+            jianshu: '',
+            content: ''
+        }
+    },
+    data: function() {
+        return {
+            loadingbiao: false,
+            queren: "确认保存",
+            //判断编辑和新增
+            biaoji: 1,
+            ruleForm: {
+                name: '',
+                ename: '',
+                zhiwei: '',
+                cid: '',
+                scly: '',
+                jianshu: '',
+                content: ''
+            },
+            loading: false,
+            rules: {
+                name: [{
+                    required: true,
+                    message: '请填写姓名！',
+                    trigger: 'blur'
+                }],
+                zhiwei: [{
+                    required: true,
+                    message: '请填写英文姓名！',
+                    trigger: 'blur'
+                }],
+                cid: [{
+                    required: true,
+                    message: '请选择人物类型！',
+                    trigger: 'change'
+                }],
+                scly: [{
+                    required: true,
+                    message: '请填写擅长领域！',
+                    trigger: 'blur'
+                }, {
+                    min: 0,
+                    max: 50,
+                    message: '字符要求为50以内',
+                    trigger: 'blur'
+                }],
+                jianshu: [{
+                    required: true,
+                    message: '请填写个人简述！',
+                    trigger: 'blur'
+                }, {
+                    min: 0,
+                    max: 80,
+                    message: '字符要求为80以内',
+                    trigger: 'blur'
+                }]
+            }
+        }
+
+    },
+    methods: {
+        //保存项目
+        submitForm(formName) {
+            //设置默认主图
+            this.loadingbiao = true;
+            this.$refs[formName].validate((valid) => {
+                if (valid) {
+                    this.setData();
+                } else {
+                    this.loadingbiao = false
+                    return false;
+                }
+            });
+        },
+        //重置项目
+        resetForm(formName) {
+            this.$refs[formName].resetFields();
+        },
+        //给form赋值
+        CB_Content(content, token) {
+            this.ruleForm.content = content
+        },
+        /*
+         *数据的处理
+         *
+         */
+        //提交数据
+        setData() {
+            var url;
+            if (this.$route.params.id) {
+                this.ruleForm.id = this.$route.params.id
+                url = this.API_ROOT + '/api/zhiku/update';
+            } else {
+                url = this.API_ROOT + '/api/zhiku/insert';
+            }
+            this.ruleForm.cid = parseInt(this.ruleForm.cid)
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.ruleForm,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    //处理完数据格式化数据
+                    this.ruleForm = {
+                        name: '',
+                        ename: '',
+                        zhiwei: '',
+                        cid: '',
+                        scly: '',
+                        jianshu: '',
+                        content: ''
+                    }
+                    this.$router.go(-1);
+                };
+                this.loadingbiao = false
+            }, (error) => {
+                this.loadingbiao = false
+                this.$emit('API-ERR')
+            });
+        },
+        //获取ruleForm数据
+        getRead() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/zhiku/read',
+                data: {
+                    id: this.$route.params.id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.ruleForm = response.data.data;
+                    this.ruleForm.cid = this.ruleForm.cid.toString()
+                }
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loading = false
+            });
+        }
+    },
+    computed: mapState({
+        zkleixing: state => state.zkleixing
+    }),
+    //注意别忘记挂载组件
+    components: {
+        vueEditor,
+        goBack
+    }
+}
+</script>

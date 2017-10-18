@@ -1,0 +1,56 @@
+<template>
+    <div>
+        <!-- 精彩专题 -->
+        <div class="inner-title padding-top-30 margin-bottom-40 margin-top-40">
+            <p class="no-margin"></p>
+            <span class="font-150">精彩专题</span>
+        </div>
+        <el-row :gutter="20">
+            <el-col :xs="24" :sm="6" :md="6" :lg="6" v-for="item in zhuantiData" :key="item.id">
+                    <div class="tjyd-img index-img-big margin-bottom-10 font-120">
+                        <a :href="item.link" target="_Blank">
+                            <img :src="item.img?item.img+'!273x163':'./static/img/default.jpg'" alt="">
+                        </a>
+                    </div>
+                    <div class="zhuanti-txt">
+                        <h4 class="ftjyd-xt font-120"><a :href="item.link" target="_Blank">{{item.title}}</a></h4>
+                    </div>
+            </el-col>
+        </el-row>
+    </div>
+</template>
+<script>
+export default {
+    created: function() {
+        this.getZhuanti()
+    },
+    data() {
+        return {
+            zhuantiData: [],
+        }
+
+    },
+    methods: {
+        getZhuanti() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zhuanti',
+                data: {
+                    listRows: 4
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.zhuantiData = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        }
+    }
+}
+</script>

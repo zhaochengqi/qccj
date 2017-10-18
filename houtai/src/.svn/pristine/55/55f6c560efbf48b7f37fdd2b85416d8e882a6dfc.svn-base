@@ -1,0 +1,224 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="6" :sm="6" class="pad-rgt">
+                    <el-input placeholder="检索：标题 " icon="search" v-model="keys" @change="KeysChange">
+                    </el-input>
+                </el-col>
+                <el-col :md="18" :sm="18" class="text-right">
+                    <el-button-group v-if="authCheck(30)&&authCheck(32)">
+                        <el-button type="primary" icon="plus" @click="handleAdd">添加视频</el-button>
+                        <el-button type="danger" icon="delete" @click="piliangDeleted">批量删除</el-button>
+                    </el-button-group>
+                    <div v-else>
+                        <el-button type="primary" v-if="authCheck(30)" icon="plus" @click="handleAdd">添加视频</el-button>
+                        <el-button type="danger" v-if="authCheck(32)" icon="delete" @click="piliangDeleted">批量删除</el-button>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe highlight-current-row border style="width: 100%" @selection-change="handleSelectionChange" @sort-change="handleSort">
+                <el-table-column type="selection" width="50">
+                </el-table-column>
+                <el-table-column prop="title" min-width="350" show-overflow-tooltip label="视频名称">
+                    <template scope="scope">
+                        <span v-if="scope.row.is_tuijian=='2'" class="badge badge-danger">推荐</span>
+                        <a href="#" class="text-primary">{{scope.row.title}}</a>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="read_count" min-width="100" label="播放次数"></el-table-column>
+                <el-table-column prop="add_time" label="添加时间" width="150" sortable="custom"></el-table-column>
+                <el-table-column label="操作" width="150" v-if="authCheck(31)||authCheck(32)">
+                    <template scope="scope">
+                        <el-button size="mini" v-if="authCheck(31)" type='primary' @click="handleEdit(scope.row.id)">
+                            <i class="el-icon-edit mini"></i> 编辑
+                        </el-button>
+                        <el-button size="mini" v-if="authCheck(32)" type="danger" @click="handleDelete(scope.row.id)">
+                            <i class="el-icon-delete"></i> 删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next, jumper" :total="total">
+            </el-pagination>
+        </div>
+    </el-card>
+</template>
+<script>
+export default {
+    activated: function() {
+        this._order = 'add_time';
+        this._sort = 'desc';
+        this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: "",
+            _order: '',
+            _sort: '',
+            multipleSelection: [],
+            tableData: [],
+        }
+
+    },
+    methods: {
+        KeysChange(val) {
+            this.keys = val.replace(/[\'\"\\\b\f\n\r\t\-\_\,\!\|\~\`\(\)\#\$\%\^\&\*\{\}\;\"\L\<\>\?]/g, '')
+            this.getData();
+        },
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = 'add_time';
+                this._sort = 'desc';
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData();
+        },
+        //多选框
+        handleSelectionChange(val) {
+            this.multipleSelection = val
+        },
+        //跳转至添加新闻页面
+        handleAdd() {
+            this.$router.push({
+                name: 'addVideo'
+            })
+        },
+        //跳编辑页面，开发时注册此处先验证一下id必须为大于0的整形后再执行跳转，否则抛出非法参数请求的消息
+        handleEdit(id) {
+            this.$router.push({
+                name: 'editVideo',
+                params: {
+                    id: id
+                }
+            })
+        },
+
+        //删除数据记录
+        handleDelete(id) {
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.deleteData(id)
+            }).catch(() => {
+
+            });
+        },
+        //批量删除
+        piliangDeleted() {
+            if (this.multipleSelection.length == 0) {
+                this.$message({
+                    type: 'warning',
+                    message: '请选择需要删除的内容！'
+                });
+                return
+            }
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                for (var i in this.multipleSelection) {
+                    this.multipleSelection[i] = this.multipleSelection[i].id
+                }
+                this.deleteData(this.multipleSelection)
+            }).catch(() => {
+
+            });
+        },
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        handleCurrentChange(val) {
+            this.loading = true;
+            this.currentPage = val;
+            this.getData();
+            this.start = this.currentPage * this.pageSize;
+        },
+        getData() {
+            //请求数据
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/videos',
+                data: {
+                    _order: this._order,
+                    _sort: this._sort,
+                    keys: this.keys,
+                    page: this.currentPage,
+                    listRows: this._pageSize
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+
+        },
+        deleteData(id) {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/videos/delete',
+                data: {
+                    id: id
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$message({
+                        message: '数据删除成功！',
+                        type: 'success'
+                    });
+                    this.multipleSelection = []
+                    this.getData()
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+        //打开发布通知公告页面
+        pushNotice() {
+            this.$router.push({
+                name: 'pushNotice'
+            })
+        }
+    },
+
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        }
+    }
+}
+</script>

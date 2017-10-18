@@ -1,0 +1,277 @@
+<template>
+    <div class="cy-ds">
+        <div class="container margin-top-50 padding-top-30">
+            <el-row :gutter="30" class="">
+                <el-col :xs="24" :sm="17" :md="17" :lg="17">
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30 border-bottom">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="20" class="margin-bottom-30 padding-bottom-30">
+                        <el-col :xs="24" :sm="8" :md="8" :lg="8">
+                            <div class="zixun-img index-img-big">
+                                <img src="../../assets/img/ceshi02.jpg" alt="">
+                            </div>
+                        </el-col>
+                        <el-col :xs="24" :sm="16" :md="16" :lg="16">
+                            <div class="zixun-txt">
+                                <h4 class="font-150"><a href="#">国产“双擎”持续发力 东风雷诺开年双月再创销量佳绩</a></h4>
+                                <p class="font-110 aui-ellipsis-2">汽车财经网讯，今日，东风雷诺公布新年开春之际汽车销量数据。汽车财经网月日讯，今日，东风雷诺公布新年开春之际汽车销量数据。</p>
+                                <div class="zixun-date margin-top-50">
+                                    <el-row>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <span class="zixun-date-icon"><i class="fa fa-user"></i></span> 作者名称　　15分钟前
+                                        </el-col>
+                                        <el-col :xs="12" :sm="12" :md="12" :lg="12">
+                                            <i class="fa fa-thumbs-o-up"></i> 0
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </div>
+                        </el-col>
+                    </el-row>
+                    <div class="fenye padding-top-40">
+                        <div class="block">
+                            <el-pagination layout="prev, pager, next" :total="total"></el-pagination>
+                        </div>
+                    </div>
+                </el-col>
+                <el-col :xs="24" :sm="7" :md="7" :lg="7">
+                    <div class="index-right">
+                        <Index_zhuanti></Index_zhuanti>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+    </div>
+</template>
+<script>
+//挂在组件
+import Index_zhuanti from './zixun/index_zhuanti'
+export default {
+    created: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            total: 1
+        }
+
+    },
+    methods: {
+        getData() {
+
+        }
+
+    },
+    computed: {
+
+    },
+    components: {
+        Index_zhuanti
+    }
+}
+</script>

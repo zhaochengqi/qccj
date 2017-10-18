@@ -1,0 +1,112 @@
+<template>
+    <!-- 编辑成绩 -->
+    <el-dialog title="成绩编辑" v-model="dialogFormVisible" @close="cleardialog">
+        <!-- 姓名，学好，年纪，课程名称 ，专业课群  -->
+        <div class="index_edit">
+            <el-row>
+                <el-col :span="6">姓名：<span>{{formData.xm}}</span></el-col>
+                <el-col :span="6">学号：<span>{{formData.xh}}</span></el-col>
+                <el-col :span="6">年级：<span>{{formData.xnj}}</span></el-col>
+                <el-col :span="6">课程代码：<span>{{formData.kcdm}}</span></el-col>
+            </el-row>
+            <div style="height: 20px;"></div>
+            <el-row>
+                <el-col :span="12">课程名称：<span>{{formData.kcmc}}</span></el-col>
+                <el-col :span="12">专业课群：<span>{{formData.kequn_title}}</span></el-col>
+            </el-row>
+        </div>
+        <hr/>
+        <el-form :model="formData" :label-width="FromLabelWidth" label-position="left">
+            <el-form-item label="考试状态">
+                <el-radio-group v-model="formData.cjxzmc">
+                    <el-radio :label="10">正常</el-radio>
+                    <el-radio :label="11">旷考</el-radio>
+                    <el-radio :label="12">缓考</el-radio>
+                    <el-radio :label="13">无资格</el-radio>
+                </el-radio-group>
+            </el-form-item>
+            <el-form-item v-if="formData.cjxzmc==10" label="考试成绩">
+                <el-radio-group v-model="formData.cj">
+                    <el-radio :label="6">优</el-radio>
+                    <el-radio :label="5">良</el-radio>
+                    <el-radio :label="4">中</el-radio>
+                    <el-radio :label="3">及格</el-radio>
+                    <el-radio :label="2">不及格</el-radio>
+                </el-radio-group>
+            </el-form-item>
+            <!-- 成绩返还5种类型，再data中定义一个选项,当为正常时显示 -->
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogFormVisible = false">取 消</el-button>
+            <el-button type="primary" @click="xfrd()">确认编辑</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+export default {
+    props: ['dialogStatus', 'cjid', 'FromLabelWidth'],
+    data() {
+        return {
+            formData: {},
+            dialogFormVisible: false,
+        }
+    },
+    watch: {
+        dialogStatus(newValue) {
+            this.dialogFormVisible = newValue
+        },
+        cjid(newValue) {
+            this.cjid = newValue;
+            this.getData()
+        }
+    },
+    methods: {
+        getData() {
+            //跨域请求，注意此处的跨域接口主域名在config/index.js配置
+            this.$http.post(this.API_ROOT + '/api/chengji/read', {
+                id: this.cjid
+            }, this.$store.getters.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.formData = response.data.data;
+                };
+            }, (error) => {
+                this.$message.error('服务器请求失败！');
+            });
+
+        },
+        //确认编辑
+        xfrd() {
+            this.$emit('CB-dialogStatus', false);
+            this.setData();
+        },
+        //退出弹框
+        cleardialog() {
+            this.$emit('CB-dialogStatus', false);
+            this.getData();
+        },
+        //修改成绩
+        setData() {
+            this.$http.post(this.API_ROOT + '/api/chengji/update', {
+                id: this.cjid,
+                cj: this.formData.cj,
+                cjxzmc: this.formData.cjxzmc
+            }, this.$store.getters.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    console.log("ok");
+                };
+            }, (error) => {
+                this.$message.error('服务器请求失败！');
+            })
+        }
+    }
+}
+</script>
+<style type="text/css">
+.index_edit span {
+    margin: 0 10px;
+}
+</style>

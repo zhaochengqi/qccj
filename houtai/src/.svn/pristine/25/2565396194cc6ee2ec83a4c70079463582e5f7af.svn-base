@@ -1,0 +1,171 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <template>
+                <el-row>
+                    <el-col :md="24" class="text-right">
+                        <el-button type="primary" icon="plus" v-if="authCheck(3)" @click="addXuenian">添加学年</el-button>
+                    </el-col>
+                </el-row>
+            </template>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" border style="width: 100%">
+                <el-table-column type="index" width="55">
+                </el-table-column>
+                <el-table-column prop="title" label="年份"></el-table-column>
+                <el-table-column prop="xnj" label="学年级"></el-table-column>
+                <el-table-column label="是否当前年份">
+                    <template scope="scope">
+                        <div v-if="scope.row.current == '2'" class="text-success">是</div>
+                        <div v-else class="text-danger">否</div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="150" v-if="authCheck(4)||authCheck(8)">
+                    <template scope="scope">
+                        <el-button size="mini" type='primary' v-if="authCheck(4)" @click="handleEdit(scope.row.id)">
+                            <i class="el-icon-edit mini"></i> 编辑
+                        </el-button>
+                        <el-button size="mini" type="danger" v-if="authCheck(8)" @click="handleDelete(scope.row.id)">
+                            <i class="el-icon-delete"></i> 删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+    </el-card>
+</template>
+<script>
+export default {
+    activated: function() {
+        this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            pageSize: this.$store.state.pageSize, //从数库仓库中调取每页显示条数配置
+            currentPage: 1,
+            keys: "",
+            tableData: [],
+            pid: '',
+        }
+
+    },
+    // 监听事件
+    watch: {
+        // 监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'keys': function(newValue, oldValue) {
+            this.keys = newValue;
+            this.getData();
+        }
+    },
+    methods: {
+        //添加学年页面，跳转
+        addXuenian() {
+            this.$router.push({
+                name: 'yearset_add'
+            })
+        },
+        //编辑数据
+        handleEdit(id) {
+            this.$router.push({
+                name: 'yearset_edit',
+                params: {
+                    id: id
+                }
+            })
+        },
+        //删除数据记录
+        handleDelete(id) {
+            this.pid = id;
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.deleteData();
+            }).catch(() => {
+
+            })
+        },
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.pageSize = val;
+            this.getData();
+        },
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        //获取数据
+        getData() {
+            this.loading = true;
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/years',
+                data: {
+                    _order: 'title',
+                    _sort: 'desc',
+                    keys: this.keys,
+                    //第几页
+                    page: this.currentPage,
+                    //显示几条
+                    listRows: this._pageSize
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.tableData = response.data.data;
+                    this.total = response.data.count;
+                };
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loading = false
+            });
+        },
+        //删除数据
+        deleteData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/years/delete',
+                data: {
+                    id: this.pid
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.$message({
+                        message: '学年信息删除成功！',
+                        type: 'success'
+                    });
+                    this.getData();
+                };
+            }, (error) => {
+                this.$emit('API-ERR');
+            });
+        }
+    },
+
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes() {
+            return this.$store.state.pageSizes
+        }
+    }
+}
+</script>

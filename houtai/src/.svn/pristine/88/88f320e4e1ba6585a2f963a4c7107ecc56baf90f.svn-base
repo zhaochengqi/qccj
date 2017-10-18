@@ -1,0 +1,212 @@
+<template>
+    <el-dialog title="导航栏信息" v-model="dialogFormVisible" v-loading="loading" element-loading-text="拼命加载中" close-on-press-escape @close="cleardialog">
+        <el-form :model="form" :label-width="formLabelWidth">
+            <el-form-item label="上级类别名称">
+                <el-cascader :options="options" change-on-select v-model="zid" @change="handleChange" :props="props" style="width:100%"></el-cascader>
+            </el-form-item>
+            <el-form-item label="Icon图标" v-if="zid.length==1&&zid[0] != 99999">
+                <el-select placeholder="请选择图片标识" v-model="form.tubiao" filterable clearable>
+                    <el-option v-for="item in option" :label="item.title" :value="item.title" :key="item.id">
+                        <i :class="item.title"></i> {{item.title}}
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="规则名称">
+                <el-input v-model="form.title" placeholder="请填写规则名称"></el-input>
+            </el-form-item>
+            <el-form-item label="接口标识">
+                <el-input v-model="form.name" placeholder="请填写接口标识"></el-input>
+            </el-form-item>
+            <el-form-item label="路由标识">
+                <el-input v-model="form.api_name" placeholder="请填写规则标识"></el-input>
+            </el-form-item>
+            <el-form-item label="作为菜单显示">
+                <el-switch on-text="是" off-text="否" on-value="1" off-value="2" v-model="form.isview"></el-switch>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" :loading="vloading" @click="handleBaocun('form')">确认保存</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+export default {
+    activated: function() {
+        this.getNode()
+        this.getSelect()
+    },
+    props: ['dialogStatus', 'dhid', 'depth'],
+    data() {
+        return {
+            vloading: false,
+            loading: false,
+            dialogFormVisible: false,
+            formLabelWidth: '150px',
+            form: {
+                name: '',
+                api_name: '',
+                title: '',
+                isview: '1',
+                pid: 0,
+                tubiao: ''
+            },
+            options: [],
+            option: [],
+            tubiaozu: [],
+            zid: [99999],
+            props: {
+                value: 'id',
+                label: 'title',
+                children: 'children'
+            }
+        }
+    },
+    watch: {
+        dialogStatus(newValue) {
+            this.dialogFormVisible = newValue
+        },
+        dhid(newValue) {
+            if (typeof newValue == 'number') {
+                this.dhid = newValue
+                this.getRead()
+            }
+        },
+        depth(newValue) {
+            if (newValue == '' || !newValue) return
+            this.zid = newValue
+        }
+    },
+    methods: {
+        handleChange(val) {
+            this.zid = val
+        },
+        //提交
+        handleBaocun(form) {
+            this.vloading = true
+            if (this.zid == 99999) {
+                this.form.pid = 0
+            } else {
+                this.form.pid = this.zid[this.zid.length - 1]
+            }
+            this.form.isview = parseInt(this.form.isview)
+            let url = ''
+            if (typeof this.dhid == 'number') {
+                this.form.id = this.dhid
+                url = this.API_ROOT + '/api/node/update'
+            } else {
+                url = this.API_ROOT + '/api/node/insert'
+            }
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$message({
+                        type: 'success',
+                        message: '保存成功'
+                    })
+                    this.form = {
+                        name: '',
+                        api_name: '',
+                        title: '',
+                        isview: 2,
+                        pid: 0,
+                        tubiao: ''
+                    }
+                    this.zid = [99999]
+                    this.getSelect()
+                    this.$emit('CB-dialogStatus', 1)
+                }
+                this.vloading = false
+            }, (error) => {
+                this.vloading = false
+                this.$emit('API-ERR')
+            })
+        },
+        getSelect() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/node/treeselect',
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    let data = {
+                        id: 99999,
+                        pid: 0,
+                        title: '作为一级菜单'
+                    }
+                    this.options = response.data.data
+                    this.options.unshift(data)
+                }
+            }, (error) => {
+                this.$emit('API-ERR')
+            })
+        },
+        //获取图标下拉列表
+        getNode() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/category/treeselect',
+                data: {
+                    pid: 2
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.option = response.data.data
+                }
+            }, (error) => {
+                this.$emit('API-ERR')
+            })
+        },
+        getRead() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/node/read',
+                data: {
+                    id: this.dhid
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.form = response.data.data
+                    this.form.isview = this.form.isview.toString()
+                    if (response.data.data.depth.length == 0) {
+                        this.zid[0] = 99999
+                    } else {
+                        this.zid = response.data.data.depth
+                    }
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        },
+        //关闭弹框
+        cleardialog() {
+            this.$emit('CB-dialogStatus', false)
+            this.form = {
+                name: '',
+                api_name: '',
+                title: '',
+                isview: 2,
+                pid: 0,
+                tubiao: ''
+            }
+            this.zid = [99999]
+        }
+    }
+}
+</script>

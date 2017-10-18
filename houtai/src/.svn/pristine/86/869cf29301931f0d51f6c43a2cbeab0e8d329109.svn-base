@@ -1,0 +1,260 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="6" class="pad-rgt">
+                    <el-input placeholder="检索：标题、作者 " icon="search" v-model="keys" clearable>
+                    </el-input>
+                </el-col>
+                <el-col :md="6" class="pad-rgt">
+                    <el-select v-model="source" clearable @change="zixSelect" placeholder="不限资讯来源" style="width:100%;">
+                        <el-option v-for="(item,index) in news_source_data" :key="index" :label="item.title" :value="item.title">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="12" class="text-right">
+                    <el-button-group>
+                        <el-button type="primary" icon="plus" class="daochu_xiangmu" @click="addNews">添加资讯</el-button>
+                        <el-button type="danger" icon="delete" class="daochu_xiangmu" @click="handleDelete('')">批量删除</el-button>
+                    </el-button-group>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe highlight-current-row border style="width: 100%" @selection-change="handleSelectionChange" @sort-change="handleSort">
+                <el-table-column type="selection" width="50">
+                </el-table-column>
+                <el-table-column prop="title" min-width="250" show-overflow-tooltip label="资讯标题">
+                    <template scope="scope">
+                        <div>
+                            <span v-if="scope.row.is_toutiao == '2'" class="badge badge-danger">头条</span>
+                            <a href="#" class="text-primary">{{scope.row.title}}</a>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="read_count" min-width="100" label="阅读次数" sortable="custom" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="nickname" min-width="130" label="作者"></el-table-column>
+                </el-table-column>
+                <el-table-column min-width="150" label="资讯来源" show-overflow-tooltip prop="source"></el-table-column>
+                <el-table-column prop="fabu_time" label="发布时间" width="150" sortable="custom">
+                </el-table-column>
+                <el-table-column label="操作" fixed="right" width="150">
+                    <template scope="scope">
+                        <el-button size="mini" type='primary' @click="handleEdit(scope.row.id)">
+                            <i class="el-icon-edit mini"></i> 编辑
+                        </el-button>
+                        <el-button size="mini" type="danger" @click="handleDelete(scope.row.id)">
+                            <i class="el-icon-delete"></i> 删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+    </el-card>
+</template>
+<script>
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    activated: function() {
+        this._order = 'add_time';
+        this._sort = 'desc';
+        this.getData();
+        this.getNewSsourceData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: "",
+            tableData: [],
+            multipleSelection: [],
+            _order: '',
+            _sort: '',
+            //资讯来源筛选
+            source: '',
+        }
+
+    },
+    // 监听事件
+    watch: {
+        // 监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'keys': function(newValue, oldValue) {
+            this.keys = newValue;
+            this.getData();
+        }
+    },
+    methods: {
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = val.prop;
+                this._sort = 'desc';
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData();
+        },
+        //资讯下拉框
+        zixSelect(val) {
+            this.source = val;
+            console.log(val)
+            this.getData()
+        },
+        //多选框
+        handleSelectionChange(val) {
+            this.multipleSelection = val
+        },
+        //跳转至添加新闻页面
+        addNews() {
+            this.$router.push({
+                name: 'addNews'
+            })
+        },
+        //跳编辑页面，开发时注册此处先验证一下id必须为大于0的整形后再执行跳转，否则抛出非法参数请求的消息
+        handleEdit(id) {
+            this.$router.push({
+                name: 'editNews',
+                params: {
+                    id: id
+                }
+            })
+        },
+        //删除数据记录
+        handleDelete(id) {
+            //判断是批量删除还是单个删除
+            if (!id) {
+                if (this.multipleSelection.length == 0) {
+                    this.$message({
+                        type: 'warning',
+                        message: '请选择需要删除的内容'
+                    });
+                    return
+                }
+            } else {
+                //单个删除数据
+                this.multipleSelection = id
+            }
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                //批量删除数据
+                if (!id) {
+                    for (var i in this.multipleSelection) {
+                        this.multipleSelection[i] = this.multipleSelection[i].id
+                    }
+                }
+                this.axios({
+                    method: 'post',
+                    url: this.API_ROOT + '/api/news/delete',
+                    data: {
+                        id: this.multipleSelection
+                    },
+                    headers: this.$store.getters.Request_Head
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.$message({
+                            message: '数据删除成功！',
+                            type: 'success'
+                        });
+                        this.multipleSelection = []
+                        this.getData()
+                    }
+                }, (error) => {
+                    this.$emit('API-ERR');
+                })
+            }).catch(() => {
+
+            });
+        },
+        //一页多少条
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        //页码
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        getData() {
+            //请求数据
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/news',
+                data: {
+                    _order: this._order,
+                    _sort: this._sort,
+                    keys: this.keys,
+                    page: this.currentPage,
+                    listRows: this._pageSize,
+                    source: this.source
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+
+        },
+        //获取资讯来源数组
+        getNewSsourceData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/category/getlist',
+                data: {
+                    pid: 19
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$store.commit('setNewsSourceType', response.data.data)
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+        //打开发布通知公告页面
+        pushNotice() {
+            this.$router.push({
+                name: 'pushNotice'
+            })
+        }
+    },
+    computed: mapState({
+        news_source_data: state => state.news_source_type,
+        _pageSize: state => state.pageSize,
+        _pageSizes: state => state.pageSizes
+    })
+}
+</script>

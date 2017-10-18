@@ -1,0 +1,488 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :span="24" class="text-right">
+                    <goBack></goBack>
+                </el-col>
+            </el-row>
+        </div>
+        <el-row :style="{ 'min-height': _PageHeight+'px'}">
+            <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="135px" class="demo-ruleForm">
+                <el-form-item label="项目名称" required>
+                    <el-col :md="16" class="pad-rgt">
+                        <el-form-item prop="title">
+                            <el-input v-model="ruleForm.title" placeholder="请填写项目名称"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8">
+                        <el-form-item prop="address">
+                            <el-input v-model="ruleForm.address" placeholder='请填写项目地点'></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="项目负责人" required>
+                    <el-col :md="8" class="pad-rgt">
+                        <el-form-item prop="fz_name">
+                            <el-input v-model="ruleForm.fz_name" placeholder="填写项目负责人姓名，必填项"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8" class="pad-rgt">
+                        <el-form-item prop="fz_phone">
+                            <el-input v-model="ruleForm.fz_phone" placeholder="填写项目负责人手机号码，必填项"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :md="8">
+                        <el-form-item prop="fz_email">
+                            <el-input v-model="ruleForm.fz_email" placeholder="填写项目负责人电子邮箱"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="实习单位" prop="danwei">
+                    <el-col :md="16" class="pad-rgt">
+                        <el-input v-model="ruleForm.danwei" placeholder="请填写实习单位名称"></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="实习时间" prop="time">
+                    <el-col :md="8" class="pad-rgt">
+                        <el-date-picker v-model="ruleForm.time" @change="changeTime" type="daterange" placeholder="选择实习时间范围" style="width:100%" range-separator=" 至 ">
+                        </el-date-picker>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="专业方向" prop="kequn">
+                    <el-checkbox-group v-model="ruleForm.kequn">
+                        <el-col :md="6" :sm="8" v-for="kq in kequn_dt" :key="kq.id">
+                            <el-checkbox :label="kq.id" name="kequn">{{kq.title}}</el-checkbox>
+                        </el-col>
+                    </el-checkbox-group>
+                </el-form-item>
+                <el-form-item label="接纳学生人数" prop="num">
+                    <el-input-number v-model="ruleForm.num" :min="1" :max="100"></el-input-number>
+                </el-form-item>
+                <el-form-item label="校内指导教师" prop="t_name">
+                    <el-col :md="8" class="pad-rgt">
+                        <el-input v-model="ruleForm.t_name" placeholder="请填写校内指导教师姓名！" @blur="submitTeacher"></el-input>
+                    </el-col>
+                    <el-col :md="8">
+                        <span v-if="arrTeacher.length==1">
+                        </span>
+                        <el-radio-group v-else v-model="ruleForm.t_account">
+                            <el-radio v-for="(item,index) in arrTeacher" :key="index" :label="item.account"></el-radio>
+                        </el-radio-group>
+                    </el-col>
+                </el-form-item>
+                <hr/>
+                <el-form-item label="项目概况" prop="gaikuang">
+                    <vueEditor :editContent="ruleForm.gaikuang" :height="200" :token="gaikuang" @Callback-Content="CB_Content"></vueEditor>
+                </el-form-item>
+                <el-form-item label="现阶段施工情况" prop="shigong">
+                    <vueEditor :editContent="ruleForm.shigong" :height="200" :token="shigong" @Callback-Content="CB_Content"></vueEditor>
+                </el-form-item>
+                <el-form-item label="实习岗位介绍" prop="gangwei">
+                    <vueEditor :editContent="ruleForm.gangwei" :height="200" :token="gangwei" @Callback-Content="CB_Content"></vueEditor>
+                </el-form-item>
+                <el-form-item label="项目图片" v-if="authCheck(71)">
+                    <el-upload class="upload-demo" :action="uploadImgUrl" :on-preview="handlePictureCardPreview" :disabled="imgUid.length>7" :on-success="onSuccessImg" :file-list="ruleForm.fileList" list-type="picture-card" multiple accept=".png,.jpg,.gif,.bmp" :headers="headersImage" :on-remove="handleRemove">
+                        <img v-if="imageUrl" :src="imageUrl" class="avatar">
+                        <i class="el-icon-plus avatar-uploader-icon"></i>
+                        <div slot="tip" class="el-upload__tip">只能上传jpg/png/bmp/jpeg文件，每张图不超过1MB，最多上传8张图片</div>
+                    </el-upload>
+                    <el-dialog v-model="dialogVisible" size="tiny">
+                        <img width="100%" :src="dialogImageUrl" alt="">
+                    </el-dialog>
+                    <span v-if="imgUid.length>0">设置项目主图：</span>
+                    <el-select v-model="current_img" v-if="imgUid.length>0" placeholder="请选择" clearable>
+                        <el-option v-for="(item,index) in imgUid" :key="index" :label="index | filterCurrentImg" :value="item">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" v-if="authCheck(60)||authCheck(61)" @click="submitForm('ruleForm')" :loading="loadingbiao">{{queren}}</el-button>
+                    <el-button @click="resetForm('ruleForm')">重置</el-button>
+                </el-form-item>
+            </el-form>
+        </el-row>
+    </el-card>
+</template>
+<script>
+import Vue from 'vue'
+
+//导入编辑器组件（共用）
+import vueEditor from '@/components/editor'
+//返回上一页共用组件
+import goBack from '@/components/goBack'
+export default {
+    activated() {
+            if (this.$route.params.id) {
+                //从编辑界面进来
+                this.biaoji = 2;
+                this.getData();
+            } else {
+                if (this.biaoji == 2) {
+                    //从编辑页面进新增界面或者第一次进
+                    this.biaoji = 1
+                    this.imgUid = []
+                    return
+                }
+                //从新增界面进新增界面
+                this.ruleForm = this.$store.state.ruleForm
+                this.ruleForm.time = "";
+            }
+        },
+        deactivated() {
+            if (this.biaoji == 2) {
+                //从编辑页面离开
+                this.ruleForm = {
+                    title: '', // 项目名称4
+                    address: '', // 项目地址
+                    fz_name: '', // 负责人姓名
+                    fz_email: '', // 负责人邮箱
+                    fz_phone: '', // 负责人手机号
+                    danwei: '', // 实习单位
+                    time: '', //实习时间
+                    kequn: [], // 专业方向 可多个
+                    num: 1, // 接纳学生人数 上限50人
+                    t_name: '', // 校内教师姓名
+                    t_account: '', // 校内教师工号
+                    gaikuang: '', // 项目概况
+                    shigong: '', // 现阶段施工情况
+                    gangwei: '', // 实习岗位介绍
+                    fileList: [],
+                    current_img: ''
+                }
+                this.arrTeacher = []
+                this.imgUid = []
+                this.current_img = ""
+            } else {
+                //从新增界面离开
+                this.setFromVuex();
+            }
+        },
+        data: function() {
+            return {
+                loadingbiao: false,
+                queren: "确认保存",
+                //判断编辑和新增
+                biaoji: 1,
+                //图片uid
+                imgUid: [],
+                //第一次进读取的数据
+                ruleForm: {
+                    title: '', // 项目名称
+                    address: '', // 项目地址
+                    fz_name: '', // 负责人姓名
+                    fz_email: '', // 负责人邮箱
+                    fz_phone: '', // 负责人手机号
+                    danwei: '', // 实习单位
+                    time: '', //实习时间
+                    kequn: [], // 专业方向 可多个
+                    num: 1, // 接纳学生人数 上限50人
+                    t_name: '', // 校内教师姓名
+                    t_account: '', // 校内教师工号
+                    gaikuang: '', // 项目概况
+                    shigong: '', // 现阶段施工情况
+                    gangwei: '', // 实习岗位介绍
+                    fileList: [],
+                    current_img: ''
+                },
+                loading: false,
+                //上传图片地址
+                uploadImgUrl: this.API_ROOT + 'api/projects/uploadimg',
+                dialogVisible: false,
+                imageUrl: '',
+                dialogImageUrl: '',
+                current_img: '',
+                rules: {
+                    title: [{
+                        required: true,
+                        message: '请填写项目名称！',
+                        trigger: 'blur'
+                    }, {
+                        min: 5,
+                        max: 80,
+                        message: '长度在 5 到 80 个字符之间',
+                        trigger: 'blur'
+                    }],
+                    address: [{
+                        required: true,
+                        message: '请填写项目地点！',
+                        trigger: 'blur'
+                    }, {
+                        max: 50,
+                        message: '项目地点长度不得超过50个字符',
+                        trigger: 'blur'
+                    }],
+                    fz_name: [{
+                        required: true,
+                        message: '请填写项目负责人姓名！',
+                        trigger: 'blur'
+                    }],
+                    danwei: [{
+                        required: true,
+                        message: '请填写实习单位名称！',
+                        trigger: 'blur'
+                    }],
+                    fz_phone: [{
+                        required: true,
+                        message: '请填写项目负责人手机号码！',
+                        trigger: 'blur'
+                    }],
+                    time: [{
+                        type: 'array',
+                        required: true,
+                        message: '请选择实习时间范围！',
+                        trigger: 'change'
+                    }],
+                    shenqing_time: [{
+                        type: 'date',
+                        required: true,
+                        message: '请选择学生申请时间范围！',
+                        trigger: 'change'
+                    }],
+                    kequn: [{
+                        type: 'array',
+                        required: true,
+                        message: '请至少选择一个专业方向！',
+                        trigger: 'change'
+                    }],
+                    num: [{
+                        type: 'integer',
+                        required: true,
+                        message: '请填写可接纳学生人数！',
+                        trigger: 'change'
+                    }],
+                    t_name: [{
+                        required: true,
+                        message: '请填写校内指导教师姓名！',
+                        trigger: 'blur'
+                    }],
+                    t_account: [{
+                        required: true,
+                        message: '请确认教师工号！',
+                        trigger: 'change'
+                    }],
+                    gaikuang: [{
+                        required: true,
+                        message: '请填写项目概况信息！',
+                        trigger: 'change'
+                    }],
+                    shigong: [{
+                        required: true,
+                        message: '请填写现阶段施工情况！',
+                        trigger: 'change'
+                    }],
+                    gangwei: [{
+                        required: true,
+                        message: '请填写实习岗位介绍!',
+                        trigger: 'change'
+                    }]
+                },
+                //令牌
+                gaikuang: 'gaikuang',
+                shigong: 'shigong',
+                gangwei: 'gangwei',
+                arrTeacher: [],
+                time: '',
+                shengqinSelected: false
+            }
+
+        },
+        methods: {
+            changeTime(val) {
+                this.time = val
+            },
+            //当教师名字发生改变时
+            submitTeacher() {
+                this.gettAccount();
+            },
+            //保存项目
+            submitForm(formName) {
+                //设置默认主图
+                this.loadingbiao = true;
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        this.setData();
+                    } else {
+                        this.loadingbiao = false
+                        return false;
+                    }
+                });
+            },
+            //重置项目
+            resetForm(formName) {
+                this.$refs[formName].resetFields();
+            },
+            //给form赋值
+            CB_Content(content, token) {
+                if (token == 'gaikuang')
+                    this.ruleForm.gaikuang = content;
+                else if (token == 'shigong')
+                    this.ruleForm.shigong = content;
+                else if (token == 'gangwei')
+                    this.ruleForm.gangwei = content;
+            },
+            /*
+             *数据的处理
+             *
+             */
+            //提交数据
+            setData() {
+                var url;
+                if (this.$route.params.id) {
+                    url = this.API_ROOT + '/api/projects/update';
+                } else {
+                    url = this.API_ROOT + '/api/projects/insert';
+                }
+                if (this.current_img) {
+                    this.ruleForm.current_img = this.current_img;
+                } else
+                if (this.ruleForm.current_img == "" && this.imgUid != "") {
+                    this.ruleForm.current_img = this.imgUid[0];
+                }
+                this.ruleForm.time = this.time;
+                this.$http.post(url, this.ruleForm, this.$store.getters.Request_Head).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                    } else {
+                        //处理完数据格式化数据
+                        this.ruleForm = {
+                            title: '', // 项目名称
+                            address: '', // 项目地址
+                            fz_name: '', // 负责人姓名
+                            fz_email: '', // 负责人邮箱
+                            fz_phone: '', // 负责人手机号
+                            danwei: '', // 实习单位
+                            time: '', //实习时间
+                            kequn: [], // 专业方向 可多个
+                            num: 1, // 接纳学生人数 上限50人
+                            t_name: '', // 校内教师姓名
+                            t_account: '', // 校内教师工号
+                            gaikuang: '', // 项目概况
+                            shigong: '', // 现阶段施工情况
+                            gangwei: '', // 实习岗位介绍
+                            fileList: [],
+                            current_img: ''
+                        }
+                        this.arrTeacher = []
+                        this.imgUid = []
+                        this.setFromVuex();
+                        this.$router.go(-1);
+                        this.$message.success('数据保存成功');
+                    };
+                    this.loadingbiao = false
+                }, (error) => {
+                    this.$emit('API-ERR')
+                    this.loadingbiao = false
+                });
+            },
+            //获取ruleForm数据
+            getData() {
+                this.loading = true
+                this.$http.post(this.API_ROOT + '/api/projects/read', {
+                    id: this.$route.params.id
+                }, this.$store.getters.Request_Head).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                    } else {
+                        this.ruleForm = response.data.data;
+                        for (var i in this.ruleForm.kequn) {
+                            this.ruleForm.kequn[i] = parseInt(this.ruleForm.kequn[i])
+                        }
+                        for (var i in this.ruleForm.fileList) {
+                            this.imgUid[i] = this.ruleForm.img + this.ruleForm.fileList[i].url;
+                            this.ruleForm.fileList[i].url = this.ruleForm.img + this.ruleForm.fileList[i].url;
+                        }
+                        this.current_img = this.ruleForm.img + this.ruleForm.current_img
+                        this.gettAccount()
+                    }
+                    this.loading = false
+                }, (error) => {
+                    this.$emit('API-ERR');
+                    this.loading = false
+                });
+            },
+            //获得教师工号
+            gettAccount() {
+                this.$http.post(this.API_ROOT + '/api/projects/checkname', {
+                    t_name: this.ruleForm.t_name
+                }, this.$store.getters.Request_Head).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                    } else {
+                        this.arrTeacher = response.data.data;
+                        //只有一个直接赋值
+                        if (this.arrTeacher.length == 1) {
+                            this.ruleForm.t_account = this.arrTeacher[0].account
+                        }
+                    }
+                }, (error) => {
+                    this.$emit('API-ERR')
+                });
+            },
+            //保存到数据仓库
+            setFromVuex() {
+                this.$store.commit('setRuleForm', this.ruleForm);
+            },
+            /*
+             *图片处理
+             */
+            //点击已上传文件时
+            handlePictureCardPreview(file) {
+                this.dialogImageUrl = file.url;
+                this.dialogVisible = true;
+            },
+            handleRemove(file, imgs) {
+                this.ruleForm.fileList = imgs;
+                this.current_img = "";
+                this.imgUid = [];
+                for (var i in imgs) {
+                    if (imgs[i].response) {
+                        this.imgUid[i] = imgs[i].response.url
+                    } else {
+                        this.imgUid[i] = imgs[i].url
+                    }
+                }
+            },
+            onSuccessImg(file, imgs, filelist) {
+                this.ruleForm.fileList = filelist
+                for (var i in filelist) {
+                    if (filelist[i].response)
+                        this.imgUid[i] = filelist[i].response.url
+                    else
+                        this.imgUid[i] = filelist[i].url
+                }
+                if (this.current_img == "" || this.current_img == this.ruleForm.img) {
+                    this.current_img = this.imgUid[0]
+                }
+            }
+        },
+        filters: {
+            filterCurrentImg(val) {
+                return `设置第${val+1}张为主图`
+            }
+        },
+        computed: {
+            //专业课群
+            kequn_dt: function() {
+                return this.$store.state.kequnfangxiang
+            },
+            headersImage: function() {
+                return {
+                    "User-Token": this.$store.state.userinfo.userinfo.token
+                }
+            }
+        },
+        //注意别忘记挂载组件
+        components: {
+            vueEditor,
+            goBack
+        }
+}
+</script>
+<style>
+.imgs_radio {
+    width: 148px;
+    display: inline-block;
+    text-align: center;
+}
+</style>

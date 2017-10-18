@@ -1,0 +1,66 @@
+<template>
+    <!-- 详情弹出框 -->
+    <el-dialog v-loading="loading" element-loading-text="拼命加载中" v-model="dialogTableVisible" @close="cleardialog">
+        <el-row :gutter="50" class="">
+            <el-col :xs="8" :sm="8" :md="8" :lg="8">
+                <div class="xiangqing-img">
+                    <img :src="detailData.img +'!159x145'" onerror="javascript:this.src='../../assets/img/default.jpg';" alt="">
+                </div>
+            </el-col>
+            <el-col :xs="16" :sm="16" :md="16" :lg="16">
+                <div class="zhuanti-txt">
+                    <h4 class="font-120 no-margin margin-bottom-10">{{detailData.name}}</h4>
+                    <h4 class="font-120 no-margin margin-bottom-30">{{detailData.zhiwei}}</h4>
+                    <p v-html="detailData.jianshu"></p>
+                </div>
+            </el-col>
+        </el-row>
+    </el-dialog>
+</template>
+<script>
+export default {
+    data() {
+            return {
+                dialogTableVisible: false,
+                detailData: [],
+                loading: false
+            }
+        },
+        props: ['dialogStatus', 'zxid'],
+        watch: {
+            'dialogStatus': function(newValue, oldValue) {
+                this.dialogTableVisible = newValue
+            },
+            'zxid': function(newValue, oldValue) {
+                if (newValue == oldValue || newValue == '') return
+                this.getZixun()
+            }
+        },
+        methods: {
+            getZixun() {
+                this.loading = true
+                this.axios({
+                    method: 'post',
+                    url: this.API_ROOT + '/home_api/zhiku/read',
+                    data: {
+                        id: this.zxid
+                    }
+                }).then((response) => {
+                    if (response.data.status.code !== 1001) {
+                        this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                    } else {
+                        this.detailData = response.data.data
+                    }
+                    this.loading = false
+                }, (error) => {
+                    this.loading = false
+                    this.$emit('API-ERR');
+                })
+            },
+            cleardialog() {
+                this.$emit('CB-dialogStatus')
+            }
+        },
+        computed: {}
+}
+</script>

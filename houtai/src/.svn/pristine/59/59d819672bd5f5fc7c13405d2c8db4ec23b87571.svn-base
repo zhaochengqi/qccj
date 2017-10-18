@@ -1,0 +1,226 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="6" :sm="12" class="pad-rgt">
+                    <el-input placeholder="检索：标题名称" icon="search" v-model="keys" @change='KeysChange'>
+                    </el-input>
+                </el-col>
+                <el-col :md="18" :sm="12" class="text-right">
+                    <el-button-group v-if="authCheck(132)&&authCheck(136)">
+                        <el-button type="primary" icon="plus" @click="addProject">添加文章</el-button>
+                        <el-button type="danger" icon="delete" @click="piliangDeleted">批量删除</el-button>
+                    </el-button-group>
+                    <div v-else>
+                        <el-button type="primary" icon="plus" v-if="authCheck(132)" @click="addProject">添加文章</el-button>
+                        <el-button type="danger" icon="delete" v-if="authCheck(136)" @click="piliangDeleted">批量删除</el-button>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe border highlight-current-row style="width: 100%" @selection-change="handleSelectionChange" @sort-change="handleSort">
+                <el-table-column type="selection" width="50"></el-table-column>
+                <el-table-column prop="title" min-width="80" show-overflow-tooltip label="标题名称"></el-table-column>
+                <el-table-column min-width="80" label="文章来源" show-overflow-tooltip>
+                    <template scope="scope">
+                        {{scope.row.source | filterSource}}
+                    </template>
+                </el-table-column>
+                <el-table-column min-width="80" label="文章归属" prop="name">
+                    <template scope="scope">
+                        {{scope.row.name}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="update_time" label="更新时间" width="150" sortable="custom">
+                </el-table-column>
+                <el-table-column width="160" label="操作" align="center" v-if="authCheck(134)||authCheck(136)">
+                    <template scope="scope">
+                        <el-button size="mini" icon="edit" type='primary' v-if="authCheck(134)" @click="handleEdit(scope.row.id)">
+                            编辑
+                        </el-button>
+                        <el-button size="mini" icon="delete2" type='danger' v-if="authCheck(136)" @click="handleDelete(scope.row.id)">
+                            删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total,sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+    </el-card>
+</template>
+<script>
+//导入vuex辅助函数
+import {
+    mapState
+} from 'vuex'
+export default {
+    //切换keep时，触发该方法
+    activated: function() {
+        this._order = 'update_time';
+        this._sort = 'desc';
+        this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: '',
+            _order: '',
+            _sort: '',
+            tableData: [],
+            multipleSelection: [],
+            pid: ''
+        }
+    },
+    methods: {
+        KeysChange(val) {
+            this.keys = val.replace(/[\'\"]/g, '')
+            this.getData();
+        },
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = "update_time";
+                this._sort = 'desc';
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData();
+        },
+        //跳转至添加或编辑项目页面
+        addProject() {
+            this.$router.push({
+                name: 'wenzhangadd'
+            })
+        },
+        //跳编辑页面
+        handleEdit(id) {
+            this.$router.push({
+                name: 'wenzhangedit',
+                params: {
+                    id: id
+                }
+            })
+        },
+        //多选
+        handleSelectionChange(val) {
+            this.multipleSelection = val
+        },
+        //删除数据记录
+        handleDelete(id) {
+            this.$confirm('是否确认删除？删除后将不可恢复!', '系统提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then((response) => {
+                this.pid = id;
+                this.deleteData();
+            }).catch(() => {
+
+            })
+        },
+        //批量删除
+        piliangDeleted() {
+            if (this.multipleSelection.length == 0) {
+                this.$message({
+                    type: 'warning',
+                    message: '请选择需要删除的内容'
+                })
+                return
+            }
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                for (var i in this.multipleSelection) {
+                    this.multipleSelection[i] = this.multipleSelection[i].id
+                }
+                this.pid = this.multipleSelection.join(',')
+                this.deleteData()
+            }).catch(() => {});
+        },
+        //显示页条数
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        //监听当前页数
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        //获取主数据
+        getData() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/zhikutext',
+                data: {
+                    keys: this.keys,
+                    _order: this._order,
+                    _sort: this._sort,
+                    page: this.currentPage,
+                    listRows: this._pageSize
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+        deleteData() {
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/zhikutext/delete',
+                data: {
+                    id: this.pid
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$message({
+                        message: '数据删除成功！',
+                        type: 'success'
+                    });
+                    this.getData();
+                    this.multipleSelection = []
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+    },
+    filters: {
+        filterSource(val) {
+            return val.join("，")
+        }
+    },
+    computed: mapState({
+        _pageSize: state => state.pageSize,
+        _pageSizes: state => state.pageSizes
+    })
+}
+</script>

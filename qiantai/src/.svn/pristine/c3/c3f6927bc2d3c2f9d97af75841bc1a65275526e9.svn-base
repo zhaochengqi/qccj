@@ -1,0 +1,108 @@
+<template>
+    <div class="danye-xiazai" >
+        <div class="container margin-top-50 padding-top-30">
+            <div class="danye-xiazai-main">
+                <el-row :gutter="80" class="margin-bottom-50" v-loading="loading" element-loading-text="拼命加载中">
+                    <el-col :xs="24" :sm="9" :md="9" :lg="9">
+                        <div class="danye-xiazai-img">
+                            <img v-if="!zazhiData.img" src="../../assets/img/default.jpg" alt="">
+                            <img v-else :src="zazhiData.img" alt="">
+                        </div>
+                    </el-col>
+                    <el-col :xs="24" :sm="15" :md="15" :lg="15">
+                        <div class="danye-xiazai-txt font-110">
+<!--                             <h2 class="font-170 no-margin margin-bottom-30">汽车财经2016年10月刊</h2>
+                            <h3 class="font-140 no-margin margin-bottom-20">{{zazhiData.title}}</h3>
+                            <h3 class="font-140 no-margin margin-bottom-50">汽车财经 / 李 倩</h3>
+                            <p>{{zazhiData.miaoshu}}</p> -->
+                            <p v-html="zazhiData.content"></p>
+                            <el-button size="large" type="danger" class="margin-top-50 padding-left-30 padding-right-30 pull-right"> <a :href="zazhiData.pdf_file " style="color:white;">立即下载</a> </el-button>
+                        </div>
+                    </el-col>
+                </el-row>
+                <Index_links>此处显示友情链接内容</Index_links>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+//挂载友情链接
+import Index_links from '../index/links'
+
+export default {
+    activated: function() {
+        this.getZazhi()
+    },
+    data() {
+        return {
+            loading: false,
+            zazhiData: {}
+        };
+    },
+    methods: {
+        //获取杂志数据
+        getZazhi() {
+            this.loading = true
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/home_api/zazhi/detail',
+                data: {
+                    id: this.$route.params.id
+                }
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.zazhiData = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR')
+            })
+        }
+    },
+    components: {
+        Index_links
+    }
+}
+</script>
+<style scoped>
+.danye-xiazai-main {
+    padding: 0 80px;
+}
+
+.danye-xiazai-img {
+    margin-right: 1px;
+    height: 420px;
+    overflow: hidden;
+}
+
+.danye-xiazai-img img {
+    width: 100%;
+}
+
+.danye-xiazai-txt {
+    color: #998b8b;
+    line-height: 30px;
+}
+
+.danye-xiazai-txt h2 {
+    color: #4b3a3a;
+}
+
+.danye-xiazai-txt h3 {
+    color: #4b3a3a;
+}
+
+.liji-xiazai {
+    display: inline-block;
+    background-color: #e2534b;
+    color: #fff;
+    width: 200px;
+    line-height: 54px;
+    border-radius: 3px;
+    text-align: center;
+    float: right;
+}
+</style>

@@ -1,0 +1,251 @@
+<template>
+    <el-dialog :title="title" :visible.sync="dialogFormVisibles" size="tiny" class="qiye-duijie" :before-close="closeDialog">
+        <el-form :model="form" :rules="rules" ref="form">
+            <el-form-item :label="label" :label-width="formLabelWidth" prop="name">
+                <el-input v-model="form.name" auto-complete="off" :placeholder="placeholder"></el-input>
+            </el-form-item>
+            <el-form-item label="联系电话" :label-width="formLabelWidth" prop="phone">
+                <el-input v-model="form.phone" auto-complete="off" placeholder="请填写联系电话"></el-input>
+            </el-form-item>
+            <el-form-item label="邮箱" :label-width="formLabelWidth" prop="email">
+                <el-input v-model="form.email" auto-complete="off" placeholder="请填写邮箱"></el-input>
+            </el-form-item>
+            <el-form-item label="对接诉求" :label-width="formLabelWidth" prop="docking">
+                <el-checkbox-group v-model="form.docking">
+                    <el-row>
+                        <el-col :span="12">
+                            <el-checkbox label="1" name="type">找投资</el-checkbox>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-checkbox label="2" name="type">找项目</el-checkbox>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-checkbox label="3" name="type">找并购机会</el-checkbox>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-checkbox label="4" name="type">解决技术难题</el-checkbox>
+                        </el-col>
+                    </el-row>
+                </el-checkbox-group>
+            </el-form-item>
+            <el-form-item label="" :label-width="formLabelWidth" prop="content">
+                <el-input type="textarea" :rows="2" :autosize="{ minRows: 2,maxRows: 4}" placeholder="输入内容，800字以内" :maxlength="maxlength" v-model="form.content">
+                </el-input>
+            </el-form-item>
+            <el-form-item label="" :label-width="formLabelWidth">
+                <!-- <el-upload class="upload-demo" drag action="https://jsonplaceholder.typicode.com/posts/" multiple>
+                    <div class="el-upload__text">点击上传相关附件 10M以内</div>
+                </el-upload> -->
+                <QN_upload type="default" button_text='点击上传相关附件 10M以内' keyPrefix="file" :filters="filtersVideo" max_file_size="10mb" @Callback-UploadProgress.self="CB_UploadProgress_video" @Callback-GetFileUrl.self="CB_GetFileUrl_video" @Callback-Error.self="CB_Error_video">
+                </QN_upload>
+                <el-progress v-if="percentage>0&&percentage<100" :percentage="percentage"></el-progress>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="danger" :loading='loadingBiao' @click="onSub">确 认</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+import QN_upload from '@/components/qiniu-upload'
+var zzEmail = /^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$/;
+export default {
+    props: ['val', 'dialogFormVisible'],
+    data() {
+        return {
+            form: {
+                tid: '',
+                name: '',
+                phone: '',
+                email: '',
+                docking: [],
+                content: '',
+                dock_file: ''
+            },
+            title: '',
+            label: '',
+            formLabelWidth: '100px',
+            dialogFormVisibles: false,
+            //视频格式
+            filtersVideo: {
+                // mime_types: [{
+                //     title: "File Files",
+                //     extensions: "pdf,zip"
+                // }]
+            },
+            percentage: 0,
+            wenjianName: '',
+            maxlength: 800,
+            placeholder: '',
+            rules: {
+                docking: [{
+                    validator: (rule, value, callback) => {
+                        if (value.length == 0) {
+                            callback(new Error('请选择对接诉求！'));
+                        } else {
+                            callback();
+                        }
+                    },
+                    trigger: 'change'
+                }],
+                content: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请填写内容！'));
+                        } else {
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                name: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            let placeholder = this.placeholder
+                            callback(new Error(placeholder));
+                        } else {
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                phone: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请填写手机号！'));
+                        } else {
+                            if (!/^1[34578]{1}\d{9}$/.test(value)) {
+                                callback(new Error('请填写正确手机号！'));
+                            }
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+                email: [{
+                    validator: (rule, value, callback) => {
+                        if (value === '') {
+                            callback(new Error('请填写邮箱！'));
+                        } else {
+                            if (!zzEmail.test(value)) {
+                                callback(new Error('请填写格式正确邮箱！'));
+                            }
+                            callback();
+                        }
+                    },
+                    trigger: 'blur'
+                }],
+            },
+            loadingBiao: false
+        }
+    },
+    watch: {
+        dialogFormVisible(newValue, oldValue) {
+            this.dialogFormVisibles = newValue
+        },
+        val(newValue, oldValue) {
+            this.form.tid = newValue;
+            switch (newValue) {
+                case '2':
+                    this.title = "企业用户对接";
+                    this.label = "企业名称";
+                    this.placeholder = "请填写企业名称"
+                    break;
+                case '1':
+                    this.title = "个人用户对接";
+                    this.label = "姓名";
+                    this.placeholder = "请填写姓名"
+                    break;
+            }
+        },
+    },
+    methods: {
+        //关闭前回调
+        closeDialog(val) {
+            this.form = {
+                tid: '',
+                name: '',
+                phone: '',
+                email: '',
+                docking: [],
+                content: '',
+                dock_file: ''
+            }
+            this.$refs['form'].resetFields();
+            this.$emit('CB-dianlog', val)
+        },
+        //提交
+        onSub() {
+            this.loadingBiao = true;
+            this.$refs['form'].validate((valid) => {
+                if (valid) {
+                    if (this.form.dock_file == '') {
+                        this.$message({
+                            message: '请上传附件！',
+                            type: 'warning'
+                        });
+                        this.loadingBiao = false;
+                        return
+                    }
+                    this.axios({
+                        method: 'post',
+                        url: this.API_ROOT + '/home_api/docking/insert',
+                        data: this.form
+                    }).then((response) => {
+                        if (response.data.status.code !== 1001) {
+                            this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                        } else {
+                            this.closeDialog(1)
+                            this.$message({
+                                message: '您已提交申请，请等待工作人员与您联系！',
+                                type: 'success'
+                            });
+                        }
+                        this.loadingBiao = false;
+                    }, (error) => {
+                        this.loadingBiao = false;
+                        this.$emit('API-ERR')
+                    })
+                } else {
+                    this.loadingBiao = false;
+                    return false
+                }
+            })
+        },
+        /**
+         * 上传附件
+         * 文件上传过程，主要用于展现上传进度
+         */
+        CB_UploadProgress_video(file) {
+            this.percentage = file.percent
+        },
+
+        //获取文件上传成功后返回的文件路径
+        CB_GetFileUrl_video(file) {
+            this.form.dock_file = file.split('!')[0];
+            this.$message({
+                message: '文件上传成功',
+                type: 'success'
+            });
+        },
+
+        //获取上传错误信息
+        CB_Error_video(err, info) {
+            if (err.code == -600) {
+                this.$message({
+                    message: '文件最大上传大小不能超过10MB！',
+                    type: 'warning'
+                });
+            } else {
+                this.$message({
+                    message: '文件上传错误！',
+                    type: 'warning'
+                });
+            }
+        }
+    },
+    components: {
+        QN_upload
+    }
+}
+</script>

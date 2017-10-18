@@ -1,0 +1,228 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row :gutter="15">
+                <el-col :md="6">
+                    <el-input placeholder="检索：姓名、学号、课程代码、课程名称" icon="search" v-model="keys">
+                    </el-input>
+                </el-col>
+                <el-col :md="6">
+                    <el-select v-model="kequn" placeholder="不限专业课群" clearable @change="selectKequn" style="width:100%">
+                        <el-option v-for="kq in kequn_data" :label="kq.title" :value="kq.id" :key="kq.id">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="5">
+                    <el-select placeholder="不限成绩" clearable @change="selectJige" v-model="searchJige" style="width:100%;">
+                        <el-option v-for="(item,index) in arrjige" :key="index" :label="item.label" :value="item.value"></el-option>
+                    </el-select>
+                </el-col>
+                <el-col :md="7" class="text-right">
+                    <el-button type="primary" icon="upload2" @click="setData">导入成绩</el-button>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" highlight-current-row border style="width: 100%" @selection-change="handleSelectionChange" @sort-change="handleSort">
+                <el-table-column type="index" width="50" fixed></el-table-column>
+                <el-table-column width="90" prop="xm" label="姓名" fixed> </el-table-column>
+                <el-table-column min-width="80" prop="xh" label="学号" sortable="custom"></el-table-column>
+                <el-table-column min-width="90" label="学期" prop="xq" sortable="custom">
+                    <template scope="scope">
+                        {{filterXueQi(scope.row.xq)}}
+                    </template>
+                </el-table-column>
+                <el-table-column min-width="150" prop="kcmc" label="课程名称" show-overflow-tooltip></el-table-column>
+                <el-table-column min-width="100" prop="kcdm" label="课程代码"></el-table-column>
+                <el-table-column min-width="160" prop="zymc" label="专业课群" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="xf" label="学分" min-width="60"></el-table-column>
+                <el-table-column min-width="80" label="成绩" prop="cj"> </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next , jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+        <IndexUpload :dialogUpload="dialogUpload" :excel="excel" @CB-dialogUpload="CB_dialogUpload"></IndexUpload>
+    </el-card>
+</template>
+<script>
+import IndexUpload from '@/page/chengji/index_upload'
+export default {
+    activated: function() {
+        this._order = "xq"
+        this._sort = "asc"
+        this.getData();
+    },
+    data() {
+        return {
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: '',
+            tableData: [],
+            //定义下拉菜单的模型
+            kc_class_id: '',
+            kequn: '',
+            xk_class_id: '',
+            multipleSelection: [],
+            isHidden: true,
+            //及格
+            arrjige: [{
+                label: '优',
+                value: 6
+            }, {
+                label: '良',
+                value: 5
+            }, {
+                label: "中",
+                value: 4
+            }, {
+                label: "及格",
+                value: 3
+            }, {
+                label: "不及格",
+                value: 2
+            }, {
+                label: '无成绩',
+                value: 1
+            }],
+            searchJige: "",
+            dialogUpload: false,
+            FromLabelWidth: "100px",
+            _order: '',
+            _sort: '',
+            excel: ''
+        }
+
+    },
+    // 监听事件
+    watch: {
+        // 监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'keys': function(newValue, oldValue) {
+            this.keys = newValue;
+            this.getData();
+        },
+    },
+    methods: {
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = val.prop
+                this._sort = "asc"
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData()
+        },
+        //当专业课群下拉菜单值发生改变时，回调此方法
+        selectKequn(val) {
+            this.kequn = val;
+            this.getData()
+        },
+        //当成绩发生变化
+        selectJige(val) {
+            this.searchJige = val;
+            this.getData();
+        },
+        //多选框
+        handleSelectionChange(val) {
+            this.multipleSelection = val;
+        },
+        //导入成绩
+        setData() {
+            this.dialogUpload = true;
+        },
+        //当页码发生改变
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.getData();
+        },
+        //当一页显示多少条发生改变
+        handleSizeChange(val) {
+            this.$store.commit("setPageSize", val);
+            this.getData();
+        },
+        getData() {
+            this.loading = true;
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/chengji',
+                data: {
+                    _order: this._order,
+                    _sort: this._sort,
+                    keys: this.keys,
+                    //第几页
+                    page: this.currentPage,
+                    //显示几条
+                    listRows: this._pageSize,
+                    zymc: this.kequn,
+                    cj: this.searchJige
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title);
+                } else {
+                    this.tableData = response.data.data;
+                    this.total = response.data.count;
+                };
+                this.loading = false
+            }, (error) => {
+                this.$emit('API-ERR');
+                this.loading = false
+            });
+        },
+        //显示/隐藏更多检索条件
+        SearchMore() {
+            if (this.isHidden) {
+                this.isHidden = false;
+                $('#search').html('<i class="el-icon-arrow-up"></i>')
+            } else {
+                this.isHidden = true;
+                $('#search').html('<i class="el-icon-arrow-down"></i>')
+            }
+        },
+        //传导入成绩界面
+        CB_dialogUpload() {
+            this.dialogUpload = false;
+        },
+        //过滤方法
+        filterXueQi: function(val) {
+            for (var i in this.xueqi_data) {
+                if (val == this.xueqi_data[i].id) {
+                    return this.xueqi_data[i].title
+                }
+            }
+        }
+    },
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        },
+        //专业课群
+        kequn_data: function() {
+            return this.$store.state.kequnfangxiang
+        },
+        //学期
+        xueqi_data: function() {
+            return this.$store.state.xueqiList
+        }
+
+    },
+    components: {
+        IndexUpload
+    }
+}
+</script>

@@ -1,0 +1,86 @@
+<template>
+    <el-dialog title="通知邮箱" :visible.sync="dialogFormVisible" v-loading="loading" element-loading-text="拼命加载中" close-on-press-escape @close="cleardialog">
+        <el-form :model="form" label-width="120px" ref="form" >
+            <el-row>
+                <el-form-item label="配置邮箱" required >
+                    <el-col :md="16">
+                        <el-input v-model="form.email" placeholder="请填写配置邮箱"></el-input>
+                    </el-col>
+                </el-form-item>
+                <el-form-item label="配置频率" required prop="type" > 
+                     <el-radio-group v-model="form.intervals" style="margin-top:5px;">
+                        <el-radio :label="index"  v-for="(item,index) in youxiang_data" :keys="item">{{item}}</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+            </el-row>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="saveData('form')"  :loading="loadingbiao">确认</el-button>
+        </div>
+    </el-dialog>
+</template>
+<script>
+import {
+    mapState
+} from 'vuex'
+
+export default {
+    props: ['dialogStatus'],
+    data() {
+        return {
+            loading: false,
+            loadingbiao: false,
+            dialogFormVisible: false,
+            form: {
+                email: '',
+                intervals:-1
+            },
+            radio2:''
+
+        }
+    },
+    watch: {
+        dialogStatus(newValue, oldValue) {
+            this.dialogFormVisible = newValue
+        },
+    },
+    methods: {
+        //保存数据
+        saveData() {
+            this.loading = true
+            var url
+            url = this.API_ROOT + '/api/docking/configemail';
+            this.axios({
+                method: 'post',
+                url: url,
+                data: this.form,
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.dialogFormVisible = false
+                    this.$message.success('数据保存成功');
+                }
+                 this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+        },
+        cleardialog() {
+            this.form = {
+                email: '',
+                intervals: ''
+            }
+            this.$emit('CB-dialogStatus')
+        }
+
+    },
+    //计算属性
+    computed: mapState({
+        youxiang_data: state => state.emailbiaoqian,
+
+    }),
+}
+</script>

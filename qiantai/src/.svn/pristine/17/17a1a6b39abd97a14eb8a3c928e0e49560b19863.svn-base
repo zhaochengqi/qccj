@@ -1,0 +1,73 @@
+// The Vue build version to load with the `import` command
+// (runtime-only or standalone) has been set in webpack.base.conf with an alias.
+import Vue from 'vue'
+import App from './App'
+import router from './router/index.js'
+
+
+//数据资源请求
+import axios from 'axios'
+import VueAxios from 'vue-axios'
+Vue.use(VueAxios, axios)
+
+//视频播放
+import VueVideoPlayer from 'vue-video-player'
+Vue.use(VueVideoPlayer)
+
+
+Vue.prototype.LS = require('storejs')
+
+import store from './store.js'
+
+
+//配置API请求主网址
+Vue.prototype.API_ROOT = process.env.API_ROOT
+
+//配置访问网站前端时的主网址
+Vue.prototype.WEB_ROOT = process.env.WEB_ROOT
+
+//配置页面主体内容 容器的默认高度
+Vue.prototype._PageHeight = document.documentElement.clientHeight - 330
+Vue.prototype.layout = false
+Vue.config.productionTip = false
+
+//配置七牛上传相关信息
+require('qiniu-js/dist/qiniu.js');
+
+//配置七牛的访问网址domain，如http://xxxx
+// Vue.prototype.qn_domain = 'http://osaeqd83t.bkt.clouddn.com/'
+
+//配置七牛的访问网址domain，如http://xxxx
+Vue.prototype.qn_domain = 'http://res.autoia.com.cn/'
+
+
+
+//节点验证
+Vue.prototype.authCheck = function(id) {
+    var juese = store.state.userinfo.userinfo
+    if (juese.account == 'admin') {
+        return true;
+    }
+    //获取角色拥有的所有节点
+    var arr = store.state.userinfo.rules;
+    if (arr) {
+        if (arr.indexOf(id) === -1) {
+            //没有权限
+            return false;
+        } else {
+            //拥有权限
+            return true;
+        }
+    } else {
+        return false;
+    }
+}
+
+/* eslint-disable no-new */
+new Vue({
+    el: '#app',
+    router,
+    store,
+    template: '<App/>',
+    components: { App }
+})

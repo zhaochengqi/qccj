@@ -1,0 +1,77 @@
+<template>
+    <nav id="mainnav-container">
+        <div id="mainnav">
+            <!--Menu-->
+            <!--================================-->
+            <div id="mainnav-menu-wrap">
+                <div class="nano">
+                    <div class="nano-content">
+                        <!--End 快捷菜单-->
+                        <ul id="mainnav-menu" class="list-group">
+                            <router-link :to="{name:'home'}" tag="li">
+                                <a href="">
+                                    <i class="demo-pli-home"></i>
+                                    <span class="menu-title">我的面板</span>
+                                </a>
+                            </router-link>
+                            <div v-for="group in sliderNavData" :key="group.id">
+                                <li class="list-header">{{group.title}}</li>
+                                <div class="no-margin" id="mainnav-menu" v-for="nav in group.child" :key='nav.id'>
+                                    <router-link :to="{name:nav.api_name}" tag="li" v-if="!nav.child">
+                                        <a href=''>
+                                            <i :class="nav.tubiao"></i>
+                                            <span class="menu-title">{{nav.title}}</span>
+                                        </a>
+                                    </router-link>
+                                    <li v-if="nav.child">
+                                        <a href='#'>
+                                            <i :class="nav.tubiao"></i>
+                                            <span class="menu-title">{{nav.title}}</span>
+                                            <i class="arrow"></i>
+                                        </a>
+                                        <ul class="collapse">
+                                            <router-link :to="{name:subNav.api_name}" tag="li" v-for="subNav in nav.child" :key='subNav.id'>
+                                                <a href="">
+                                            {{subNav.title}}
+                                        </a>
+                                            </router-link>
+                                        </ul>
+                                    </li>
+                                </div>
+                            </div>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!--================================-->
+            <!--End menu-->
+        </div>
+    </nav>
+</template>
+<script>
+export default {
+    created: function() {
+        if (this.$store.state.settings.slider.userinfo !== true) {
+            this.viewUser = 'hidden'
+        }
+        if (this.$store.state.settings.slider.fastlink !== true) {
+            this.viewFastlink = 'hidden'
+        }
+    },
+    data: function() {
+        return {
+            viewUser: '',
+
+            viewFastlink: ''
+        }
+    },
+    methods: {
+
+    },
+    computed: {
+        sliderNavData() {
+            return this.$store.state.sliderNavData
+        }
+    }
+}
+</script>

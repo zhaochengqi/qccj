@@ -1,0 +1,275 @@
+<template>
+    <el-card class="box-card" v-loading="loading" element-loading-text="拼命加载中">
+        <div slot="header" class="clearfix">
+            <el-row>
+                <el-col :md="5">
+                    <el-input placeholder="检索：广告名称、链接地址" icon="search" v-model="keys" clearable>
+                    </el-input>
+                </el-col>
+                <el-col :md="19" class="text-right">
+                    <el-button-group> ;
+                        <el-button type="primary" icon="document" @click="handleAdd">添加广告</el-button>
+                        <el-button type="danger" icon="delete" @click="piliangDeleted">批量删除</el-button>
+                    </el-button-group>
+                </el-col>
+            </el-row>
+        </div>
+        <div v-bind:style="{ 'min-height': _PageHeight+'px'}">
+            <el-table :data="tableData" stripe highlight-current-row border style="width: 100%" @selection-change="handleSelectionChange" @sort-change="handleSort" @cell-click="handleCellClick">
+                <el-table-column type="selection" width="50"></el-table-column>
+                <el-table-column prop="title" label="排序" min-width="150">
+                    <template scope="scope">
+                        <el-input-number :value="scope.row.paixu" size="small" :controls="false" @change="PaixuChange" :min="1" :max="99999" :debounce="900"></el-input-number>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="title" label="广告名称" min-width="200" show-overflow-tooltip>
+                    <template scope="scope">
+                        <a href="#" class="text-primary">{{scope.row.title}}</a>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="type" label="广告位" min-width="200" show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column prop="link_url" label="链接地址" min-width="200" show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column label="操作" width="150">
+                    <template scope="scope">
+                        <el-button size="mini" type='primary' @click="handleEdit(scope.row.id)">
+                            <i class="el-icon-edit mini"></i> 编辑
+                        </el-button>
+                        <el-button size="mini" type="danger" @click="handleDelete(scope.row.id)">
+                            <i class="el-icon-delete"></i> 删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div class="clearfix">
+            <template>
+                <el-pagination class="margin-top-20 text-right" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="_pageSizes" :page-size="_pageSize" layout="total, sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </template>
+        </div>
+        <!-- 挂载添加/编辑链接子组件 -->
+        <addLinks :dialogStatus="dialog" :id="id" @CB-dialogStatus="CB_dialogStatus"></addLinks>
+    </el-card>
+</template>
+<script>
+import addLinks from './index_add'
+
+export default {
+    activated: function() {
+        this._order = 'add_time';
+        this._sort = 'desc';
+        // this.getData();
+    },
+    data() {
+        return {
+            dialog: false,
+            total: 0,
+            loading: false,
+            currentPage: 1,
+            keys: "",
+            multipleSelection: [],
+            _order: '',
+            _sort: '',
+            row_key: 0,
+            id: -1, //编辑时传递的记录id
+            tableData: [{
+                id: 1,
+                title: '网易汽车',
+                paixu: 12,
+                type: '主页Banner',
+                link_url: 'http://auto.163.com'
+            }, {
+                id: 2,
+                title: '新浪汽车',
+                paixu: 4,
+                type: '主页Banner',
+                link_url: 'http://auto.sina.com.cn'
+            }, {
+                id: 3,
+                title: '汽车之家',
+                paixu: 1,
+                type: '主页Banner',
+                link_url: 'http://www.autohome.com'
+            }]
+        }
+
+    },
+    // 监听事件
+    watch: {
+        // 监听“keys”数据模型变化，当值发生改变时，重新获取一次数据
+        'keys': function(newValue, oldValue) {
+            this.keys = newValue;
+            this.getData();
+        }
+    },
+    methods: {
+        //接收子组件传送过来的数据
+        CB_dialogStatus(val) {
+            if (val == 1) {
+                this.getData()
+            }
+            this.id = -1
+            this.dialog = false
+        },
+        //排序
+        handleSort(val) {
+            if (val.prop == null || !val.prop) {
+                this._order = 'add_time';
+                this._sort = 'desc';
+            } else {
+                this._order = val.prop
+                if (val.order == "ascending") {
+                    this._sort = "asc"
+                } else if (val.order == "descending") {
+                    this._sort = "desc"
+                }
+            }
+            this.getData();
+        },
+        //多选框
+        handleSelectionChange(val) {
+            this.multipleSelection = val
+        },
+        //编辑
+        handleEdit(id) {
+            this.id = id;
+            this.dialog = true;
+        },
+        //删除数据记录
+        handleDelete(id) {
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.deleteData(id)
+            }).catch(() => {
+
+            });
+        },
+        //批量删除
+        piliangDeleted() {
+            if (this.multipleSelection.length == 0) {
+                this.$message({
+                    type: 'warning',
+                    message: '请选择需要删除的内容'
+                });
+                return
+            }
+            this.$confirm('删除后不可恢复，确定要删除吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                for (var i in this.multipleSelection) {
+                    this.multipleSelection[i] = this.multipleSelection[i].id
+                }
+                this.deleteData(this.multipleSelection)
+            }).catch(() => {
+
+            });
+        },
+        //条数
+        handleSizeChange(val) {
+            this.$store.commit('setPageSize', val);
+            this.getData();
+        },
+        //页码
+        handleCurrentChange(val) {
+            this.loading = true;
+            this.currentPage = val;
+            this.getData();
+        },
+        getData() {
+            //请求数据
+            this.loading = true
+            this.$http.post(this.API_ROOT + '/api/notice', {
+                _order: this._order,
+                _sort: this._sort,
+                keys: this.keys,
+                page: this.currentPage,
+                listRows: this._pageSize,
+                // kequn:this.kequn
+            }, this.$store.getters.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data
+                    this.total = response.data.count
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+            this.axios({
+                method: 'post',
+                url: this.API_ROOT + '/api/link',
+                data: {
+                    keys: this.keys,
+                    page: this.currentPage,
+                    listRows: this._pageSize
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.tableData = response.data.data
+                }
+                this.loading = false
+            }, (error) => {
+                this.loading = false
+                this.$emit('API-ERR');
+            })
+
+        },
+        deleteData(id) {
+            this.$http.post(this.API_ROOT + '/api/notice/delete', {
+                id: id
+            }, this.$store.getters.Request_Head).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                } else {
+                    this.$message({
+                        message: '数据删除成功！',
+                        type: 'success'
+                    });
+                    this.multipleSelection = []
+                    this.getData()
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+        },
+        //打开添加链接页面
+        handleAdd() {
+            this.dialog = true
+        },
+        //单元格被点击，搭配下面的手动排序功能，实现自动排序功能
+        handleCellClick(row) {
+            this.row_key = row.id
+        },
+        //手动排序，提交更改当前id记录的排序号，并重新拉取数据
+        PaixuChange(val) {
+            console.log(this.row_key)
+            console.log(val)
+        }
+    },
+
+    computed: {
+        //定义“computed”属性，当store中的相应值变动时，当前页面中在此处定义的所有变量将自动更新
+        _pageSize: function() {
+            return this.$store.state.pageSize
+        },
+        _pageSizes: function() {
+            return this.$store.state.pageSizes
+        }
+    },
+    components: {
+        addLinks
+    }
+}
+</script>

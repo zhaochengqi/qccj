@@ -1,0 +1,69 @@
+<template>
+    <el-col :xs="14" :sm="8" :md="8" :lg="8">
+        <div class="zixun-date">
+            <i class="fa fa-thumbs-o-up" style="cursor:pointer; " :class="qieclass" @click="onSet(id,type,1)"></i> 顶 {{cai_count}}　<i class="fa fa-thumbs-o-down" style="cursor:pointer" @click="onSet(id,type,2)"></i> 踩 {{ding_count}}
+            <!-- <i class="el-icon-star-off"></i> 收藏 0 -->
+        </div>
+    </el-col>
+</template>
+<script>
+export default {
+    props: ['id', 'type', 'cai_count', 'ding_count'],
+    data() {
+        return {
+            formData: {},
+            qieclass: '',
+            types: '',
+            cai_counts: '',
+            ding_counts: '',
+            ids: ''
+        }
+    },
+    methods: {
+        /**
+         * [onSet 点击顶和踩]
+         * @param  {[type]} id    [当前文章]
+         * @param  {[type]} type  [新闻为1，智库为2]
+         * @param  {[type]} state [赞为1，踩为2]
+         */
+        onSet(id, type, state) {
+            console.log(id)
+            console.log(type)
+            console.log(state)
+            this.setData(id, type, state)
+            this.qieclass = "yanse"
+        },
+        //处理数据
+        setData(id, type, state) {
+            var url
+            url = this.API_ROOT + '/home_api/news/dac';
+            this.axios({
+                method: 'post',
+                url: url,
+                data: {
+                    type: type,
+                    id: id,
+                    state: state
+                },
+                headers: this.$store.getters.Request_Head
+            }).then((response) => {
+                if (response.data.status.code !== 1001) {
+                    this.$message.error(response.data.data ? response.data.data : response.data.status.title)
+                }
+            }, (error) => {
+                this.$emit('API-ERR');
+            })
+
+        },
+        cleardialog() {
+            this.$emit('CB-dialogStatus')
+        }
+    },
+    computed: {},
+}
+</script>
+<style>
+.yanse {
+    color: red;
+}
+</style>
